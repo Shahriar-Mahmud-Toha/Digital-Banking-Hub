@@ -7,7 +7,7 @@ import { ProductKeys } from './ProductKeys.entity';
 import { BaseSalary } from './BaseSalary.entity';
 import { AttendanceReports } from './AttendanceReports.entity';
 import { Authentication } from 'src/Authentication/Authentication.entity';
-import { Users } from 'src/Employee/Users.entity';
+import { Users } from 'src/CommonEntities/Users.entity';
 
 @Injectable()
 export class AdminService {

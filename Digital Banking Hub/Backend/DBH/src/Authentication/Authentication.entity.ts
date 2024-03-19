@@ -1,7 +1,7 @@
 import { AttendanceReports } from 'src/Administrator/AttendanceReports.entity';
 import { Role } from 'src/Administrator/Role.entity';
 import { SalarySheet } from 'src/Administrator/SalarySheet.entity';
-import { Users } from 'src/Employee/Users.entity';
+import { Users } from 'src/CommonEntities/Users.entity';
 import { Entity, Column, PrimaryColumn, Generated, ManyToMany, ManyToOne, JoinColumn, OneToOne, OneToMany } from 'typeorm';
 
 @Entity("Authentication")
