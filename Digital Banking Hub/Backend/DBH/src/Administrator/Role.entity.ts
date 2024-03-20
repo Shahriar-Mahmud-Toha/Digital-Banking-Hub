@@ -6,7 +6,7 @@ import { BaseSalary } from './BaseSalary.entity';
 @Entity("Role")
 export class Role {
     @PrimaryColumn()
-    Id: String;
+    Id: string;
     @Column()
     Name: string;
     @OneToMany(()=> Authentication, Authentication=>Authentication.Role)
