@@ -32,7 +32,7 @@ export class SalarySheet {
     @Column()
     Dec: Number;
 
-    @ManyToOne(() => Authentication, Authentication => Authentication.SalarySheet)
+    @ManyToOne(() => Authentication, Authentication => Authentication.SalarySheet, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
     @JoinColumn({name:"Email"})
     Authentication: Authentication;
 }

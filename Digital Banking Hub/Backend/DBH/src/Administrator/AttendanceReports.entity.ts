@@ -32,7 +32,7 @@ export class AttendanceReports {
     @Column()
     Dec: Number;
 
-    @ManyToOne(() => Authentication, Authentication => Authentication.AttendanceReports)
+    @ManyToOne(() => Authentication, Authentication => Authentication.AttendanceReports, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
     @JoinColumn({name:"Email"})
     Authentication: Authentication;
 }

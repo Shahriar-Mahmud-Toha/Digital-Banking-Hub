@@ -23,7 +23,7 @@ export class Users {
     @Column()
     FileName:String //PictureName
 
-    @OneToOne(() => Authentication, Authentication => Authentication.User)
+    @OneToOne(() => Authentication, Authentication => Authentication.User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
     @JoinColumn({name:"Email"})
     Authentication: Authentication;
     @BeforeInsert()

@@ -1,3 +1,4 @@
+import { AdminOTP } from 'src/Administrator/AdminOTP.entity';
 import { AttendanceReports } from 'src/Administrator/AttendanceReports.entity';
 import { Role } from 'src/Administrator/Role.entity';
 import { SalarySheet } from 'src/Administrator/SalarySheet.entity';
@@ -14,7 +15,7 @@ export class Authentication {
     RoleID: string;
     @Column({ default: false })
     Active: boolean;
-    @ManyToOne(()=>Role, Role=>Role.Authentications )
+    @ManyToOne(()=>Role, Role=>Role.Authentications, { onDelete: 'CASCADE', onUpdate: 'CASCADE' } )
     @JoinColumn({name:"RoleId"})
     Role:Role
     @OneToOne(()=>Users, Users=>Users.Authentication )
