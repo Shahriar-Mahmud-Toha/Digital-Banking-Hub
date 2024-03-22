@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, Param, Patch, Post, Put, Query, UsePipes, ValidationPipe } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, Param, Patch, Post, Put, Query, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
 import { AdminService } from "./admin.service";
 import { UseInterceptors, UploadedFile }
     from '@nestjs/common';
@@ -10,6 +10,7 @@ import { randomBytes } from "crypto";
 import { extname, join } from "path";
 import { existsSync, mkdirSync, renameSync, unlinkSync } from 'fs';
 import { submitOtp } from "./DTOs/submitOtp.dto";
+import { adminAuthGuard } from './Auth/adminAuth.guard';
 
 const tempFolder = './uploads/admin/temp';
 const storageFolder = './uploads/admin/storage';
@@ -19,6 +20,7 @@ export class AdminController {
     constructor(private readonly adminService: AdminService) { }
 
     //#region : Role
+    @UseGuards(adminAuthGuard)
     @Post("/role/create")
     @UsePipes(new ValidationPipe)
     async CreateRole(@Body() data: Object): Promise<Object> {
@@ -27,6 +29,7 @@ export class AdminController {
             RoleID: await this.adminService.CreateRole(data["Name"])
         }
     }
+    @UseGuards(adminAuthGuard)
     @Patch("/role/update/:id")
     @UsePipes(new ValidationPipe)
     async UpdateRole(@Param("id") id: string, @Body() data): Promise<Object> {
@@ -42,7 +45,7 @@ export class AdminController {
             }
         }
     }
-
+    @UseGuards(adminAuthGuard)
     @Delete("/role/delete/:id")
     @UsePipes(new ValidationPipe)
     async DeleteRole(@Param("id") id: string): Promise<Object> {
@@ -58,6 +61,7 @@ export class AdminController {
             }
         }
     }
+    @UseGuards(adminAuthGuard)
     @Get("/role/getall")
     @UsePipes(new ValidationPipe)
     async GetAllRoles(): Promise<Object> {
@@ -178,6 +182,21 @@ export class AdminController {
             return true;
         }
         return false;
+    }
+    @UseGuards(adminAuthGuard)
+    @Get("/delete/:email")
+    @UsePipes(new ValidationPipe)
+    async deleteAdmin(@Param("email") email: string): Promise<Object> {
+        const data = await this.adminService.findVerifiedAdminByEmail(email);
+        if(data==false){
+            throw new BadRequestException("No Admin found associated with this email.");
+        }
+        if(await this.adminService.deleteAdmin(email)){
+            return {
+                message: "Admin Account Deleted Successfully."
+            }
+        }
+        throw new InternalServerErrorException("Account Deletion Failed.");
     }
 
     //#endregion : Admin

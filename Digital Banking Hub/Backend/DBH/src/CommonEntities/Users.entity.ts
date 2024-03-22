@@ -5,7 +5,7 @@ import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, PrimaryColumn, Ge
 @Entity("Users")
 export class Users {
     @PrimaryColumn()
-    userId: String;
+    userId: string;
     @Column()
     FullName: string;
     @Column({name:"Email"})
@@ -15,13 +15,13 @@ export class Users {
     @Column({type: 'date'})
     DOB: Date;
     @Column()
-    NID:String
+    NID:string
     @Column()
-    Phone:String
+    Phone:string
     @Column()
-    Address:String
+    Address:string
     @Column()
-    FileName:String //PictureName
+    FileName:string //PictureName
 
     @OneToOne(() => Authentication, Authentication => Authentication.User, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
     @JoinColumn({name:"Email"})

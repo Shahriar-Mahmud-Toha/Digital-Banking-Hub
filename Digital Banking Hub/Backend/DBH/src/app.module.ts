@@ -4,6 +4,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ManagerModule } from './Manager/manager.module';
 import { AdminModule } from './Administrator/admin.module';
+import { adminAuthModule } from './Administrator/Auth/adminAuth.module';
 
 @Module({
   imports: [AdminModule, ManagerModule,TypeOrmModule.forRoot(
@@ -16,6 +17,7 @@ import { AdminModule } from './Administrator/admin.module';
     autoLoadEntities: true,
     synchronize: true,
     } ),
+    adminAuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

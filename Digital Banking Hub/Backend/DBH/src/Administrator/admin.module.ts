@@ -14,14 +14,23 @@ import { AdminDetails } from './DTOs/AdminDetails.dto';
 // import { MailerModule } from "@nestjs-modules/mailer";
 import { AdminOTP } from './AdminOTP.entity';
 import { submitOtp } from './DTOs/submitOtp.dto';
+import { JwtModule } from '@nestjs/jwt';
+import { adminAuthModule } from './Auth/adminAuth.module';
+import { adminAuthService } from './Auth/adminAuth.service';
 // import nodemailer from 'nodemailer';
 // const nodemailer = require('nodemailer');
 
 
 @Module({
-  imports: [adminSignup, AdminDetails, submitOtp, TypeOrmModule.forFeature([Role, BaseSalary, AttendanceReports, SalarySheet, ProductKeys, Authentication, Users, AdminOTP]), 
+  imports: [adminSignup, AdminDetails, submitOtp, TypeOrmModule.forFeature([Role, BaseSalary, AttendanceReports, SalarySheet, ProductKeys, Authentication, Users, AdminOTP]),
+    // JwtModule.register({
+    //   global: true,
+    //   secret: "3NP_Backend_Admin",
+    //   signOptions: { expiresIn: '30m' },
+    // }),
   ],
   controllers: [AdminController],
-  providers: [AdminService],
+  providers: [AdminService, adminAuthService],
+  exports: [AdminService],
 })
 export class AdminModule { }

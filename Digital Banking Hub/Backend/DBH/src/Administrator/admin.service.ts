@@ -18,6 +18,8 @@ import path from 'path';
 import * as fs from 'fs';
 import authInfo from "./MailConfig/info.json"
 import { submitOtp } from './DTOs/submitOtp.dto';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from '@nestjs/jwt';
 const nodemailer = require('nodemailer');
 
 @Injectable()
@@ -31,6 +33,7 @@ export class AdminService {
         @InjectRepository(Authentication) private authenticationRepository: Repository<Authentication>,
         @InjectRepository(Users) private usersRepository: Repository<Users>,
         @InjectRepository(AdminOTP) private adminOTPRepository: Repository<AdminOTP>,
+        private jwtService: JwtService
     ) { }
 
     //#region : Role
@@ -120,7 +123,11 @@ export class AdminService {
             if (await this.sendOTP(data.Email) == false) {
                 return -3; // OTP Not Sent
             }
-            let cData = await this.authenticationRepository.save(await this.AdminSignupDTOtoAuthentication(data));
+            //hashing password
+            const salt = await bcrypt.genSalt();
+            data.Password = await bcrypt.hash(data.Password, salt); 
+
+            await this.authenticationRepository.save(await this.AdminSignupDTOtoAuthentication(data));
             return 1; //success
         } catch (error) {
             console.error('Error while Creating Admin:', error);
@@ -194,19 +201,19 @@ export class AdminService {
             return false;
         }
     }
-    async submitOtpForAdminSignup(data:submitOtp): Promise<Number> {
-        try{
+    async submitOtpForAdminSignup(data: submitOtp): Promise<Number> {
+        try {
             let user = await this.findAdminByEmail(data.email);
-            if(user==null){
+            if (user == null) {
                 return -1; //User not found in auth table
             }
             let exOtpData = await this.adminOTPRepository.find({
                 where: { Email: data.email }
             });
-            if(exOtpData.length == 0){
+            if (exOtpData.length == 0) {
                 return -2; //User not found in OTP table
             }
-            if(exOtpData[0].Otp != null && exOtpData[0].Otp == data.otp){
+            if (exOtpData[0].Otp != null && exOtpData[0].Otp == data.otp) {
                 exOtpData[0].Verified = true;
                 exOtpData[0].Otp = null;
                 await this.adminOTPRepository.save(exOtpData);
@@ -214,7 +221,7 @@ export class AdminService {
             }
             return 0; //invalid OTP
         }
-        catch(error){
+        catch (error) {
             return -3; //Database related error
         }
     }
@@ -261,6 +268,21 @@ export class AdminService {
             return false;
         }
     }
+    async findVerifiedAdminByEmailForAuth(email: string): Promise<Authentication | null> {
+        try {
+            let exData = await this.authenticationRepository.find({
+                where: { Email: email, RoleID: await this.getRoleIdByName("admin"), Active: true}
+            });
+            if (exData.length == 0) {
+                return null; //Admin not found
+            }
+            return exData[0];
+        }
+        catch (error) {
+            // console.log(error);
+            return null;
+        }
+    }
     async findVerifiedAdminByEmail(email: string): Promise<Authentication | boolean> {
         try {
             let exData = await this.authenticationRepository.find({
@@ -270,7 +292,7 @@ export class AdminService {
                 return false; //Admin not found
             }
             let exOtpData = await this.adminOTPRepository.find({
-                where: { Email: email, Verified:true }
+                where: { Email: email, Verified: true }
             });
             if (exOtpData.length == 0) {
                 return false; //Admin not verified
@@ -323,6 +345,35 @@ export class AdminService {
         newData.Address = data.Address;
         return newData;
     }
-
+    async deleteAdmin(email: string): Promise<boolean> {
+        try {
+            let userData = await this.usersRepository.find({
+                where: { Email: email }
+            });
+            let adminData = await this.authenticationRepository.find({
+                where: { Email: email, RoleID: await this.getRoleIdByName("admin") }
+            });
+            if (userData.length == 0 || adminData.length == 0) {
+                return false;
+            }
+            if(await this.authenticationRepository.remove(adminData) == undefined){
+                return false;
+            }
+            const filePath = path.join(__dirname,'../..', 'uploads', 'admin', 'storage', userData[0].FileName);
+            if (fs.existsSync(filePath)) {
+                try {
+                    fs.unlinkSync(filePath);
+                } catch (error) {
+                    // console.error('Error deleting file:', error);
+                    return false;
+                }
+            }
+            return true;
+        }
+        catch (error) {
+            // console.log(error);
+            return false;
+        }
+    }
     //#endregion : Admin
 }
