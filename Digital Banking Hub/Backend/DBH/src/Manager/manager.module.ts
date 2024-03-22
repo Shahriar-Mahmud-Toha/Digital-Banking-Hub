@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-
 import { Authentication } from 'src/Authentication/Authentication.entity';
 import { Users } from 'src/CommonEntities/Users.entity';
 import { ManagerController } from './manager.controller';
