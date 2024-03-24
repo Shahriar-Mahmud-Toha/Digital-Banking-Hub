@@ -8,7 +8,7 @@ export class BaseSalary {
     @PrimaryGeneratedColumn()
     Id: Number;
     @Column({name:"RoleId"})
-    RoleId: Number;
+    RoleId: string;
     @Column()
     Salary: Number;
     @OneToOne(() => Role, Role => Role.BaseSalary, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

@@ -15,6 +15,7 @@ import { UpdateAdminDetails } from "./DTOs/UpdateAdminDetails.dto";
 import { JwtService } from "@nestjs/jwt";
 import { UpdateAdminEmail } from "./DTOs/UpdateAdminEmail.dto";
 import { ForgetAdminPassword } from "./DTOs/ForgetAdminPassword.dto";
+import { AllocateSalary } from "./DTOs/AllocateSalary.dto";
 
 const tempFolder = './uploads/admin/temp';
 const storageFolder = './uploads/admin/storage';
@@ -445,4 +446,64 @@ export class AdminController {
         }
     }
     //#endregion : Admin
+
+    //#region : Allocate Salary based on Role
+
+    @UseGuards(adminAuthGuard)
+    @Put("/allocateSalary")
+    @UsePipes(new ValidationPipe)
+    async allocateSalaryBasedOnRole(@Body() data:AllocateSalary, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        const dbRoldId = await this.adminService.getRoleIdByName(data.RoleName);
+        if (dbRoldId == null) {
+            throw new BadRequestException("No Role found with this name.");
+        }
+        if (await this.adminService.allocateSalaryBasedOnRole(dbRoldId,data.Salary) == true) {
+            return {
+                message: "Salary allocated Successfully.",
+            }
+        }
+        throw new InternalServerErrorException("Salary allocation failed due to database error");
+    }
+
+    @UseGuards(adminAuthGuard)
+    @Get("/allocatedSalary/get/:roleName")
+    @UsePipes(new ValidationPipe)
+    async getRoleBasedSalaryInfo(@Param("roleName") roleName: string, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        const dbRoldId = await this.adminService.getRoleIdByName(roleName);
+        if (dbRoldId == null) {
+            throw new BadRequestException("No Role found with this name.");
+        }
+        const res = await this.adminService.getRoleBasedSalaryInfo(dbRoldId);
+        if (res != null) {
+            return {
+                message: "Operation Successful",
+                data: res
+            }
+        }
+        throw new InternalServerErrorException("Operation failed due to database error");
+    }
+
+    //#endregion : Allocate Salary based on Role
 }

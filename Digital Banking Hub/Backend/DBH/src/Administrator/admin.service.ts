@@ -539,4 +539,50 @@ export class AdminService {
         }
     }
     //#endregion : Admin
+
+    //#region : Allocating Salary
+    
+    async allocateSalaryBasedOnRole(roleId:string, salary: number): Promise<boolean> {
+        try {
+            let exRoleData = await this.baseSalaryRepository.find({
+                where: { RoleId: roleId }
+            });
+            if (exRoleData.length == 0) {
+                const baseSal = new BaseSalary();
+                baseSal.RoleId = roleId;
+                baseSal.Salary = salary;
+                if (await this.baseSalaryRepository.save(baseSal) != null) {
+                    return true; //error in table
+                }
+                return false;
+            }
+            exRoleData[0].Salary = salary;
+            if (await this.baseSalaryRepository.save(exRoleData[0]) != null) {
+                return true; //error in table
+            }
+            return false;
+        }
+        catch (error) {
+            console.log(error);
+            return false; //Database related error
+        }
+    }
+
+    async getRoleBasedSalaryInfo(roleId:string): Promise<BaseSalary> {
+        try {
+            let roleData = await this.baseSalaryRepository.find({
+                where: { RoleId: roleId }
+            });
+            if (roleData.length == 0) {
+                return null;
+            }
+            return roleData[0];
+        }
+        catch (error) {
+            console.log(error);
+            return null; //Database related error
+        }
+    }
+
+    //#endregion : Allocating Salary
 }
