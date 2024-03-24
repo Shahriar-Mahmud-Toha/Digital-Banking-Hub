@@ -1,4 +1,4 @@
-import { BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, Param, Patch, Post, Put, Query, Req, UseGuards, UsePipes, ValidationPipe } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, Param, Patch, Post, Put, Query, Req, UseGuards, UsePipes, ValidationPipe, Request, Res } from "@nestjs/common";
 import { AdminService } from "./admin.service";
 import { UseInterceptors, UploadedFile }
     from '@nestjs/common';
@@ -11,19 +11,36 @@ import { extname, join } from "path";
 import { existsSync, mkdirSync, renameSync, unlinkSync } from 'fs';
 import { submitOtp } from "./DTOs/submitOtp.dto";
 import { adminAuthGuard } from './Auth/adminAuth.guard';
+import { UpdateAdminDetails } from "./DTOs/UpdateAdminDetails.dto";
+import { JwtService } from "@nestjs/jwt";
+import { UpdateAdminEmail } from "./DTOs/UpdateAdminEmail.dto";
+import { ForgetAdminPassword } from "./DTOs/ForgetAdminPassword.dto";
 
 const tempFolder = './uploads/admin/temp';
 const storageFolder = './uploads/admin/storage';
 
 @Controller('/admin')
 export class AdminController {
-    constructor(private readonly adminService: AdminService) { }
+    constructor(private readonly adminService: AdminService,
+        private readonly jwtService: JwtService
+    ) { }
 
     //#region : Role
     @UseGuards(adminAuthGuard)
     @Post("/role/create")
     @UsePipes(new ValidationPipe)
-    async CreateRole(@Body() data: Object): Promise<Object> {
+    async CreateRole(@Body() data: Object, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
         return {
             message: "Role Created Successfully",
             RoleID: await this.adminService.CreateRole(data["Name"])
@@ -32,7 +49,18 @@ export class AdminController {
     @UseGuards(adminAuthGuard)
     @Patch("/role/update/:id")
     @UsePipes(new ValidationPipe)
-    async UpdateRole(@Param("id") id: string, @Body() data): Promise<Object> {
+    async UpdateRole(@Param("id") id: string, @Body() data, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
         let res = await this.adminService.updateRole(id, data["Name"]);
         if (!res) {
             return {
@@ -48,7 +76,18 @@ export class AdminController {
     @UseGuards(adminAuthGuard)
     @Delete("/role/delete/:id")
     @UsePipes(new ValidationPipe)
-    async DeleteRole(@Param("id") id: string): Promise<Object> {
+    async DeleteRole(@Param("id") id: string, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
         let res = await this.adminService.deleteRole(id);
         if (!res) {
             return {
@@ -64,7 +103,18 @@ export class AdminController {
     @UseGuards(adminAuthGuard)
     @Get("/role/getall")
     @UsePipes(new ValidationPipe)
-    async GetAllRoles(): Promise<Object> {
+    async GetAllRoles(@Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
         return {
             message: "Operation Successful",
             data: await this.adminService.getAllRoles()
@@ -188,16 +238,211 @@ export class AdminController {
     @UsePipes(new ValidationPipe)
     async deleteAdmin(@Param("email") email: string): Promise<Object> {
         const data = await this.adminService.findVerifiedAdminByEmail(email);
-        if(data==false){
+        if (data == false) {
             throw new BadRequestException("No Admin found associated with this email.");
         }
-        if(await this.adminService.deleteAdmin(email)){
+        if (await this.adminService.deleteAdmin(email)) {
             return {
                 message: "Admin Account Deleted Successfully."
             }
         }
         throw new InternalServerErrorException("Account Deletion Failed.");
     }
+    @UseGuards(adminAuthGuard)
+    @Patch("/update/details")
+    @UsePipes(new ValidationPipe)
+    async updateAdminDetails(@Body() data: UpdateAdminDetails, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        if (await this.adminService.updateAdminDetails(data, payload.email) == true) {
+            return {
+                message: "Admin Account Details updated Successfully."
+            }
+        }
+        throw new InternalServerErrorException("Account Details update failed.");
+    }
+    @UseGuards(adminAuthGuard)
+    @Patch("/update/profilePicture")
+    @UsePipes(new ValidationPipe)
+    @UseInterceptors(FileInterceptor('picture',
+        {
+            fileFilter: (req, file, cb) => {
+                if (file.originalname.match(/^.*\.(jpg|png|jpeg)$/)) {
+                    cb(null, true);
+                } else {
+                    cb(new MulterError('LIMIT_UNEXPECTED_FILE', 'image'), false);
+                }
+            },
+            limits: { fileSize: 500000 },// 4 megabit
+            storage: diskStorage({
+                destination: tempFolder,
+                filename: function (req, file, cb) {
+                    const randomBytesBuffer = randomBytes(4);
+                    let ranNum = parseInt(randomBytesBuffer.toString('hex'), 16) % 100000000; ////8 digit -> 10e8
+                    const extension = extname(file.originalname);
+                    cb(null, Date.now() + ranNum.toString() + extension)
+                },
+            })
+        }))
+    async updateAdminProfilePicture(@UploadedFile() picture: Express.Multer.File, @Request() req): Promise<Object> {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const payload = this.jwtService.decode(token) as { email: string, role: string };
+            const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+            if (exData == null) {
+                throw new BadRequestException("No Admin found associated with this credentials.");
+            }
+            if (await this.adminService.updateAdminProfilePicture(payload.email, picture.filename) == true) {
+                const sourcePath = join(tempFolder, picture.filename);
+                const destinationPath = join(storageFolder, picture.filename);
+                if (!existsSync(storageFolder)) {
+                    mkdirSync(storageFolder, { recursive: true });
+                }
+                renameSync(sourcePath, destinationPath);
 
+                return {
+                    message: "Admin Account Profile Picture updated Successfully."
+                }
+            }
+            throw new InternalServerErrorException("Profile Picture update operation failed due to database error.");
+        } catch (error) {
+            await this.deleteTempPicture(picture.filename);
+            throw error;
+        }
+    }
+    @UseGuards(adminAuthGuard)
+    @Get("/profile/get/data")
+    @UsePipes(new ValidationPipe)
+    async GetProfileData(@Request() req): Promise<Object> {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const payload = this.jwtService.decode(token) as { email: string, role: string };
+            const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+            if (exData == null) {
+                throw new BadRequestException("No Admin found associated with this credentials.");
+            }
+            const result = await this.adminService.getAdminDetails(payload.email);
+            if (result != null) {
+                return {
+                    message: "Operation Successful.",
+                    userId:result.userId,
+                    Email:result.Email,
+                    FullName:result.FullName,
+                    Gender:result.Gender,
+                    DateOfBirth:result.DOB,
+                    NID:result.NID,
+                    Phone:result.Phone,
+                    Address:result.Address,
+                }
+            }
+            throw new InternalServerErrorException("Profile Picture update operation failed due to database error.");
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
+    }
+    @UseGuards(adminAuthGuard)
+    @Get("/profile/get/profilePicture")
+    @UsePipes(new ValidationPipe)
+    async GetProfilePicture(@Res() res, @Request() req): Promise<Object> {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const payload = this.jwtService.decode(token) as { email: string, role: string };
+            const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+            if (exData == null) {
+                throw new BadRequestException("No Admin found associated with this credentials.");
+            }
+            const result = await this.adminService.getAdminDetails(payload.email);
+            if (result != null) {
+                return {
+                    message: "Operation Successful.",
+                    File:res.sendFile(result.FileName, { root: './uploads/admin/storage/' })
+                }
+            }
+            throw new InternalServerErrorException("Profile Picture update operation failed due to database error.");
+        } catch (error) {
+            console.log(error);
+            throw error;
+        }
+    }
+    @UseGuards(adminAuthGuard)
+    @Patch("/update/email")
+    @UsePipes(new ValidationPipe)
+    async updateAdminEmail(@Body() data:UpdateAdminEmail, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        if (await this.adminService.sendOTPforUpdateAdminEmail(data.NewEmail) == true) {
+            return {
+                message: "OTP Sent to your email successfully. Submit OTP and complete email update process.",
+            }
+        }
+        throw new InternalServerErrorException("Email update failed.");
+    }
+    @UseGuards(adminAuthGuard)
+    @Post("/update/email/submitOtp")
+    @UsePipes(new ValidationPipe)
+    async submitOtpForUpdateAdminEmail(@Body() data:submitOtp, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        if (await this.adminService.verifyOTPforUpdateAdminEmail(data,payload.email) == 1) {
+            return {
+                message: "Email updated Successfully. Now re-login for get updated auth token.",
+            }
+        }
+        else{
+            throw new InternalServerErrorException("Invalid OTP. Email update failed.");
+        }
+    }
+
+    @Post("/forgetPassword")
+    @UsePipes(new ValidationPipe)
+    async sendOTPforForgetAdminPassword(@Body() data:Object): Promise<Object> {
+        
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(data["email"]);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        if (await this.adminService.sendOTPforForgetAdminPassword(data["email"]) == true) {
+            return {
+                message: "OTP Sent to your email successfully. Submit OTP and complete password reset process.",
+            }
+        }
+        throw new InternalServerErrorException("Failed to send OTP");
+    }
+
+    @Post("/forgetPassword/submitOtp")
+    @UsePipes(new ValidationPipe)
+    async submitOtpForForgetAdminPassword(@Body() data:ForgetAdminPassword): Promise<Object> {
+        
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(data.Email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        if (await this.adminService.verifyOTPforForgetAdminPassword(data, exData) == 1) {
+            return {
+                message: "Password reset Successfully. Now re-login for get updated auth token.",
+            }
+        }
+        else{
+            throw new InternalServerErrorException("Invalid OTP. Password reset failed.");
+        }
+    }
     //#endregion : Admin
 }

@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 import { Role } from './Role.entity';
@@ -10,7 +10,7 @@ import { Authentication } from 'src/Authentication/Authentication.entity';
 import { Users } from 'src/CommonEntities/Users.entity';
 import { adminSignup } from './DTOs/AdminSignup.dto';
 import { AdminDetails } from './DTOs/AdminDetails.dto';
-import { parse } from 'date-fns';
+import { add, parse } from 'date-fns';
 import { randomBytes } from 'crypto';
 import { AdminOTP } from './AdminOTP.entity';
 import { Console } from 'console';
@@ -20,6 +20,8 @@ import authInfo from "./MailConfig/info.json"
 import { submitOtp } from './DTOs/submitOtp.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
+import { UpdateAdminDetails } from './DTOs/UpdateAdminDetails.dto';
+import { ForgetAdminPassword } from './DTOs/ForgetAdminPassword.dto';
 const nodemailer = require('nodemailer');
 
 @Injectable()
@@ -125,7 +127,7 @@ export class AdminService {
             }
             //hashing password
             const salt = await bcrypt.genSalt();
-            data.Password = await bcrypt.hash(data.Password, salt); 
+            data.Password = await bcrypt.hash(data.Password, salt);
 
             await this.authenticationRepository.save(await this.AdminSignupDTOtoAuthentication(data));
             return 1; //success
@@ -270,9 +272,11 @@ export class AdminService {
     }
     async findVerifiedAdminByEmailForAuth(email: string): Promise<Authentication | null> {
         try {
+            // console.log(email);
             let exData = await this.authenticationRepository.find({
-                where: { Email: email, RoleID: await this.getRoleIdByName("admin"), Active: true}
+                where: { Email: email, RoleID: await this.getRoleIdByName("admin"), Active: true }
             });
+            // console.log(exData);
             if (exData.length == 0) {
                 return null; //Admin not found
             }
@@ -333,6 +337,74 @@ export class AdminService {
             return false;
         }
     }
+    async updateAdminDetails(data: UpdateAdminDetails, email: string): Promise<boolean> {
+        try {
+            let exData = await this.usersRepository.find({
+                where: { Email: email }
+            });
+            exData[0].Phone = data.Phone;
+            exData[0].FullName = data.FullName;
+            exData[0].Gender = data.Gender;
+            exData[0].DOB = data.DateOfBirth;
+            exData[0].NID = data.NID;
+            exData[0].Address = data.Address;
+            let cData = await this.usersRepository.save(exData[0]);
+            return cData != null; //success
+        } catch (error) {
+            console.error('Error while Creating Admin:', error);
+            return false;
+        }
+    }
+
+    async sendOTPforUpdateAdminEmail(newEmail: string): Promise<boolean> {
+        try {
+            if (await this.sendOTP(newEmail) == true) {
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error while sending OTP for Update Admin Email:', error);
+            return false;
+        }
+    }
+    async verifyOTPforUpdateAdminEmail(data: submitOtp, prevEmail: string): Promise<Number> {
+        try {
+            let exOtpData = await this.adminOTPRepository.find({
+                where: { Email: data.email }
+            });
+            if (exOtpData.length == 0) {
+                return -2; //User not found in OTP table
+            }
+            if (exOtpData[0].Otp != null && exOtpData[0].Otp == data.otp) {
+                exOtpData[0].Verified = true;
+                exOtpData[0].Otp = null;
+                if (await this.adminOTPRepository.save(exOtpData) == null) {
+                    return -3; //error in otp table
+                }
+                let adData = await this.authenticationRepository.find({
+                    where: { Email: prevEmail }
+                });
+                if (adData.length == 0) {
+                    return -4; //no admin found in auth table
+                }
+                // adData[0].Email = data.email;
+                let exOTPTableData = await this.adminOTPRepository.find({
+                    where: { Email: prevEmail }
+                });
+                if (exOTPTableData.length == 0) {
+                    return -6; //prev email not found in admin otp table
+                }
+                if ((await this.authenticationRepository.update({ Email: prevEmail }, { Email: data.email })) && (await this.adminOTPRepository.remove(exOTPTableData[0]) != null)) {
+                    return 1; //OTP verified
+                }
+                return -5; //failed
+            }
+            return 0; //invalid OTP
+        }
+        catch (error) {
+            return -3; //Database related error
+        }
+    }
     async AdminDetailsDTOtoUser(data: AdminDetails, fileName: string): Promise<Users> {
         let newData = new Users();
         newData.Email = data.Email;
@@ -356,10 +428,10 @@ export class AdminService {
             if (userData.length == 0 || adminData.length == 0) {
                 return false;
             }
-            if(await this.authenticationRepository.remove(adminData) == undefined){
+            if (await this.authenticationRepository.remove(adminData) == undefined) {
                 return false;
             }
-            const filePath = path.join(__dirname,'../..', 'uploads', 'admin', 'storage', userData[0].FileName);
+            const filePath = path.join(__dirname, '../..', 'uploads', 'admin', 'storage', userData[0].FileName);
             if (fs.existsSync(filePath)) {
                 try {
                     fs.unlinkSync(filePath);
@@ -373,6 +445,97 @@ export class AdminService {
         catch (error) {
             // console.log(error);
             return false;
+        }
+    }
+    async updateAdminProfilePicture(email: string, fileName: string): Promise<boolean> {
+        try {
+            let adminData = await this.usersRepository.find({
+                where: { Email: email }
+            });
+            if (adminData.length == 0) {
+                return false;
+            }
+            let prevFileName = adminData[0].FileName;
+            adminData[0].FileName = fileName;
+            let cData = await this.usersRepository.save(adminData[0]);
+            if (cData == null) {
+                return false;
+            }
+            const filePath = path.join(__dirname, '../..', 'uploads', 'admin', 'storage', prevFileName);
+            if (fs.existsSync(filePath)) {
+                try {
+                    await fs.unlinkSync(filePath);
+                    return true; // File deleted successfully
+                } catch (error) {
+                    console.error('Error deleting file:', error);
+                    return false; // Error deleting file
+                }
+            } else {
+                console.error('File does not exist:', filePath);
+                return false; // File does not exist
+            }
+        } catch (error) {
+            console.error('Error while Creating Admin:', error);
+            return false;
+        }
+    }
+    async getAdminDetails(email: string): Promise<Users> {
+        try {
+            let exData = await this.usersRepository.find({
+                where: { Email: email }
+            });
+            if (exData.length == 0) {
+                return null; //Admin not found
+            }
+            return exData[0];
+        }
+        catch (error) {
+            // console.log(error);
+            return null;
+        }
+    }
+
+    async sendOTPforForgetAdminPassword(email: string): Promise<boolean> {
+        try {
+            if (await this.sendOTP(email) == true) {
+                return true;
+            }
+            return false;
+        } catch (error) {
+            console.error('Error while sending OTP for forget Admin password:', error);
+            return false;
+        }
+    }
+    async verifyOTPforForgetAdminPassword(data: ForgetAdminPassword, previousAuthData: Authentication): Promise<Number> {
+        try {
+            let exOtpData = await this.adminOTPRepository.find({
+                where: { Email: data.Email }
+            });
+            if (exOtpData.length == 0) {
+                return -2; //User not found in OTP table
+            }
+            if (exOtpData[0].Otp != null && exOtpData[0].Otp == data.otp) {
+
+                exOtpData[0].Verified = true;
+                exOtpData[0].Otp = null;
+                if (await this.adminOTPRepository.save(exOtpData) == null) {
+                    return -3; //error in otp table
+                }
+                //hashing password
+                const salt = await bcrypt.genSalt();
+                previousAuthData.Password = await bcrypt.hash(data.NewPassword, salt);
+                const res = await this.authenticationRepository.save(previousAuthData);
+                if (res != null) {
+                    // !! Vulnerability: After this line users previous authentication token should removed. But here that code not written.
+                    return 1; //password changed
+                }
+                return -5; //failed
+            }
+            return 0; //invalid OTP
+        }
+        catch (error) {
+            console.log(error);
+            return -3; //Database related error
         }
     }
     //#endregion : Admin
