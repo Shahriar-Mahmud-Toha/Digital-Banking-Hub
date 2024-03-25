@@ -1,3 +1,4 @@
+//#region : imports
 import { BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, Param, Patch, Post, Put, Query, Req, UseGuards, UsePipes, ValidationPipe, Request, Res } from "@nestjs/common";
 import { AdminService } from "./admin.service";
 import { UseInterceptors, UploadedFile }
@@ -20,6 +21,8 @@ import { AttendanceReports } from "./AttendanceReports.entity";
 import { Readable } from 'stream';
 import * as ExcelJS from 'exceljs';
 import { salarySheetGen } from "./DTOs/salarySheetGen.dto";
+
+//#endregion: imports
 
 const tempFolder = './uploads/admin/temp';
 const storageFolder = './uploads/admin/storage';
