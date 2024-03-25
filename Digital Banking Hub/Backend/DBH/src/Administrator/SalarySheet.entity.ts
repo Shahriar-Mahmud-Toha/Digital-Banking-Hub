@@ -8,30 +8,30 @@ export class SalarySheet {
     @Column()
     Year: Number;
     @Column({name:"Email"})
-    Email: String;
-    @Column()
+    Email: string;
+    @Column({ default: 0 })
     Jan: Number;
-    @Column()
+    @Column({ default: 0 })
     Feb: Number;
-    @Column()
+    @Column({ default: 0 })
     Mar: Number;
-    @Column()
+    @Column({ default: 0 })
     Apr: Number;
-    @Column()
+    @Column({ default: 0 })
     May: Number;
-    @Column()
+    @Column({ default: 0 })
     Jun: Number;
-    @Column()
+    @Column({ default: 0 })
     Jul: Number;
-    @Column()
+    @Column({ default: 0 })
     Aug: Number;
-    @Column()
+    @Column({ default: 0 })
     Sep: Number;
-    @Column()
+    @Column({ default: 0 })
     Oct: Number;
-    @Column()
+    @Column({ default: 0 })
     Nov: Number;
-    @Column()
+    @Column({ default: 0 })
     Dec: Number;
 
     @ManyToOne(() => Authentication, Authentication => Authentication.SalarySheet, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })

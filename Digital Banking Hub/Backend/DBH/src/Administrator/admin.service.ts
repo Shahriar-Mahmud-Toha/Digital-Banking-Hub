@@ -1,6 +1,6 @@
 import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, Repository } from 'typeorm';
+import { IsNull, MoreThan, Repository } from 'typeorm';
 import { Role } from './Role.entity';
 import { SalarySheet } from './SalarySheet.entity';
 import { ProductKeys } from './ProductKeys.entity';
@@ -22,6 +22,7 @@ import * as bcrypt from 'bcrypt';
 import { JwtService } from '@nestjs/jwt';
 import { UpdateAdminDetails } from './DTOs/UpdateAdminDetails.dto';
 import { ForgetAdminPassword } from './DTOs/ForgetAdminPassword.dto';
+import { salarySheetGen } from './DTOs/salarySheetGen.dto';
 const nodemailer = require('nodemailer');
 
 @Injectable()
@@ -616,4 +617,59 @@ export class AdminService {
         }
     }
     //#endregion : attendance
+
+    //#region : Salary Sheet
+
+    async genSalarySheet(data: salarySheetGen): Promise<SalarySheet[]> {
+        try {
+            const attendanceData = await this.attendanceReportsRepository.find({
+                where: { Year: data.year },
+            });
+    
+            const authData = await this.authenticationRepository.find({
+                select: ["Email", "RoleID"]
+            });
+    
+            const baseSalaryData = await this.baseSalaryRepository.find();
+    
+            let salarySheets: SalarySheet[] = [];
+    
+            for (const attendance of attendanceData) {
+                const { Email } = attendance;
+                const authInfo = authData.find(auth => auth.Email === Email);
+                const baseSalaryInfo = baseSalaryData.find(salary => salary.RoleId === authInfo.RoleID);
+    
+                let salarySheet = await this.salarySheetRepository.findOne({
+                    where: { Year: data.year, Email: Email }
+                });
+    
+                if (!salarySheet) {
+                    salarySheet = new SalarySheet();
+                    salarySheet.Year = data.year;
+                    salarySheet.Email = Email;
+                }
+    
+                salarySheet[data.month] = (attendance[data.month] || 0) * (baseSalaryInfo.Salary / 30.0);
+    
+                await this.salarySheetRepository.save(salarySheet);
+    
+                salarySheets.push(salarySheet);
+            }
+            
+            return await this.salarySheetRepository.find({
+                where: { Year: data.year }
+            });
+        } catch (error) {
+            console.log(error);
+            return null;
+        }
+    }
+    
+    
+    
+    
+    
+    
+
+    //#endregion : Salary Sheet
 }

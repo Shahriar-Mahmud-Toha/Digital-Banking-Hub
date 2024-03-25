@@ -11,12 +11,12 @@ export class Authentication {
     Email: string;
     @Column()
     Password: string;
-    @Column({name:"RoleId"})
+    @Column({name:"RoleID"})
     RoleID: string;
     @Column({ default: false })
     Active: boolean;
     @ManyToOne(()=>Role, Role=>Role.Authentications, { onDelete: 'CASCADE', onUpdate: 'CASCADE' } )
-    @JoinColumn({name:"RoleId"})
+    @JoinColumn({name:"RoleID"})
     Role:Role
     @OneToOne(()=>Users, Users=>Users.Authentication )
     User:Users

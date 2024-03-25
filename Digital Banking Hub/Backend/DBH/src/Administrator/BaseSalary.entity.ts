@@ -10,7 +10,7 @@ export class BaseSalary {
     @Column({name:"RoleId"})
     RoleId: string;
     @Column()
-    Salary: Number;
+    Salary: number;
     @OneToOne(() => Role, Role => Role.BaseSalary, { onDelete: 'CASCADE', onUpdate: 'CASCADE' })
     @JoinColumn({name:"RoleId"})
     Role: Role;

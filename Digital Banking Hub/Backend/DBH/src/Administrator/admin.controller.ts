@@ -19,6 +19,7 @@ import { AllocateSalary } from "./DTOs/AllocateSalary.dto";
 import { AttendanceReports } from "./AttendanceReports.entity";
 import { Readable } from 'stream';
 import * as ExcelJS from 'exceljs';
+import { salarySheetGen } from "./DTOs/salarySheetGen.dto";
 
 const tempFolder = './uploads/admin/temp';
 const storageFolder = './uploads/admin/storage';
@@ -581,8 +582,35 @@ export class AdminController {
                 data:res
             }
         }
-        throw new InternalServerErrorException("Salary allocation failed due to database error");
+        throw new InternalServerErrorException("Attendance Report generation failed due to database error");
     }
-
     //#endregion : attendance
+    
+    //#region : Salary Sheet
+
+    @UseGuards(adminAuthGuard)
+    @Post("/salarySheet/generate")
+    @UsePipes(new ValidationPipe)
+    async genSalarySheetByMonthAndYear(@Body() data: salarySheetGen, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        const res = await this.adminService.genSalarySheet(data);
+        if (res != null) {
+            return {
+                message: "Operation Successful",
+                data:res
+            }
+        }
+        throw new InternalServerErrorException("Salary generation failed due to database error");
+    }
+    //#endregion : Salary Sheet
 }
