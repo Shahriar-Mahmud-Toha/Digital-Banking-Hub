@@ -665,11 +665,35 @@ export class AdminService {
         }
     }
     
-    
-    
-    
-    
-    
 
     //#endregion : Salary Sheet
+
+    //#region : Users
+
+    async getAllUsersDetails(): Promise<Users []> {
+        try{
+            return await this.usersRepository.find();
+        }
+        catch(error){
+            console.log(error);
+            return null;
+        }
+    }
+    async deActivateUser(email:string): Promise<boolean> {
+        try{
+            let data = await this.authenticationRepository.findOne({where:{Email:email}});
+            if(data==null){
+                return null;
+            }
+            data.Active = false;
+            let res = await this.authenticationRepository.save(data);
+            return res != null;
+        }
+        catch(error){
+            console.log(error);
+            return null;
+        }
+    }
+
+    //#endregion: Users
 }

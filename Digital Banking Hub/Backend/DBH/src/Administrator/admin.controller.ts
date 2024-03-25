@@ -613,4 +613,57 @@ export class AdminController {
         throw new InternalServerErrorException("Salary generation failed due to database error");
     }
     //#endregion : Salary Sheet
+
+    //#region : users
+
+    @UseGuards(adminAuthGuard)
+    @Get("/getDetails/allUsers")
+    @UsePipes(new ValidationPipe)
+    async getAllUsersDetails(@Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        const res = await this.adminService.getAllUsersDetails();
+        if (res != null) {
+            return {
+                message: "Operation Successful",
+                data:res
+            }
+        }
+        throw new InternalServerErrorException("Users details getting operation failed due to database error");
+    }
+
+    @UseGuards(adminAuthGuard)
+    @Post("/deActivate")
+    @UsePipes(new ValidationPipe)
+    async deActivateUser(@Body() data:Object, @Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        const res = await this.adminService.deActivateUser(data["email"]);
+        if (res != null) {
+            return {
+                message: "Operation Successful",
+            }
+        }
+        throw new InternalServerErrorException("Users not deactivated.");
+    }
+
+    //#endregion : users
 }
