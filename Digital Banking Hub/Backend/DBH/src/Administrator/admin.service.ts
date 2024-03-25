@@ -606,6 +606,14 @@ export class AdminService {
             return false;
         }
     }
-
+    async getAttendanceReport(): Promise<AttendanceReports []> {
+        try{
+            return await this.attendanceReportsRepository.find();
+        }
+        catch(error){
+            console.log(error);
+            return null;
+        }
+    }
     //#endregion : attendance
 }

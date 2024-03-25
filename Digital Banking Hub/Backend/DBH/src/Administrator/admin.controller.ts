@@ -559,5 +559,30 @@ export class AdminController {
         return { message: 'Excel file uploaded and data imported successfully' };
     }
 
+    @UseGuards(adminAuthGuard)
+    @Get("/attendance/getReport")
+    @UsePipes(new ValidationPipe)
+    async getAttendanceReport(@Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        const res = await this.adminService.getAttendanceReport();
+        if (res != null) {
+            return {
+                message: "Operation Successful",
+                data:res
+            }
+        }
+        throw new InternalServerErrorException("Salary allocation failed due to database error");
+    }
+
     //#endregion : attendance
 }
