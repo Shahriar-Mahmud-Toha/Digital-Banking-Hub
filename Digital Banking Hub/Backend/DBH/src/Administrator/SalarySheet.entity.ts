@@ -3,7 +3,9 @@ import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, PrimaryColumn, Ge
 
 @Entity("SalarySheet")
 export class SalarySheet {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn()
+    Id: Number;
+    @Column()
     Year: Number;
     @Column({name:"Email"})
     Email: String;

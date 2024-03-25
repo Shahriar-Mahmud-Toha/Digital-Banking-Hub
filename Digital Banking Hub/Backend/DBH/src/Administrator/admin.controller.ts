@@ -16,6 +16,9 @@ import { JwtService } from "@nestjs/jwt";
 import { UpdateAdminEmail } from "./DTOs/UpdateAdminEmail.dto";
 import { ForgetAdminPassword } from "./DTOs/ForgetAdminPassword.dto";
 import { AllocateSalary } from "./DTOs/AllocateSalary.dto";
+import { AttendanceReports } from "./AttendanceReports.entity";
+import { Readable } from 'stream';
+import * as ExcelJS from 'exceljs';
 
 const tempFolder = './uploads/admin/temp';
 const storageFolder = './uploads/admin/storage';
@@ -33,7 +36,7 @@ export class AdminController {
     async CreateRole(@Body() data: Object, @Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
-        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
             return {
                 message: "Invalid Auth Token.",
             }
@@ -53,7 +56,7 @@ export class AdminController {
     async UpdateRole(@Param("id") id: string, @Body() data, @Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
-        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
             return {
                 message: "Invalid Auth Token.",
             }
@@ -80,7 +83,7 @@ export class AdminController {
     async DeleteRole(@Param("id") id: string, @Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
-        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
             return {
                 message: "Invalid Auth Token.",
             }
@@ -107,7 +110,7 @@ export class AdminController {
     async GetAllRoles(@Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
-        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
             return {
                 message: "Invalid Auth Token.",
             }
@@ -330,14 +333,14 @@ export class AdminController {
             if (result != null) {
                 return {
                     message: "Operation Successful.",
-                    userId:result.userId,
-                    Email:result.Email,
-                    FullName:result.FullName,
-                    Gender:result.Gender,
-                    DateOfBirth:result.DOB,
-                    NID:result.NID,
-                    Phone:result.Phone,
-                    Address:result.Address,
+                    userId: result.userId,
+                    Email: result.Email,
+                    FullName: result.FullName,
+                    Gender: result.Gender,
+                    DateOfBirth: result.DOB,
+                    NID: result.NID,
+                    Phone: result.Phone,
+                    Address: result.Address,
                 }
             }
             throw new InternalServerErrorException("Profile Picture update operation failed due to database error.");
@@ -361,7 +364,7 @@ export class AdminController {
             if (result != null) {
                 return {
                     message: "Operation Successful.",
-                    File:res.sendFile(result.FileName, { root: './uploads/admin/storage/' })
+                    File: res.sendFile(result.FileName, { root: './uploads/admin/storage/' })
                 }
             }
             throw new InternalServerErrorException("Profile Picture update operation failed due to database error.");
@@ -373,7 +376,7 @@ export class AdminController {
     @UseGuards(adminAuthGuard)
     @Patch("/update/email")
     @UsePipes(new ValidationPipe)
-    async updateAdminEmail(@Body() data:UpdateAdminEmail, @Request() req): Promise<Object> {
+    async updateAdminEmail(@Body() data: UpdateAdminEmail, @Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
@@ -390,10 +393,10 @@ export class AdminController {
     @UseGuards(adminAuthGuard)
     @Post("/update/email/submitOtp")
     @UsePipes(new ValidationPipe)
-    async submitOtpForUpdateAdminEmail(@Body() data:submitOtp, @Request() req): Promise<Object> {
+    async submitOtpForUpdateAdminEmail(@Body() data: submitOtp, @Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
-        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
             return {
                 message: "Invalid Auth Token.",
             }
@@ -402,20 +405,20 @@ export class AdminController {
         if (exData == null) {
             throw new BadRequestException("No Admin found associated with this credentials.");
         }
-        if (await this.adminService.verifyOTPforUpdateAdminEmail(data,payload.email) == 1) {
+        if (await this.adminService.verifyOTPforUpdateAdminEmail(data, payload.email) == 1) {
             return {
                 message: "Email updated Successfully. Now re-login for get updated auth token.",
             }
         }
-        else{
+        else {
             throw new InternalServerErrorException("Invalid OTP. Email update failed.");
         }
     }
 
     @Post("/forgetPassword")
     @UsePipes(new ValidationPipe)
-    async sendOTPforForgetAdminPassword(@Body() data:Object): Promise<Object> {
-        
+    async sendOTPforForgetAdminPassword(@Body() data: Object): Promise<Object> {
+
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(data["email"]);
         if (exData == null) {
             throw new BadRequestException("No Admin found associated with this credentials.");
@@ -430,8 +433,8 @@ export class AdminController {
 
     @Post("/forgetPassword/submitOtp")
     @UsePipes(new ValidationPipe)
-    async submitOtpForForgetAdminPassword(@Body() data:ForgetAdminPassword): Promise<Object> {
-        
+    async submitOtpForForgetAdminPassword(@Body() data: ForgetAdminPassword): Promise<Object> {
+
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(data.Email);
         if (exData == null) {
             throw new BadRequestException("No Admin found associated with this credentials.");
@@ -441,7 +444,7 @@ export class AdminController {
                 message: "Password reset Successfully. Now re-login for get updated auth token.",
             }
         }
-        else{
+        else {
             throw new InternalServerErrorException("Invalid OTP. Password reset failed.");
         }
     }
@@ -452,10 +455,10 @@ export class AdminController {
     @UseGuards(adminAuthGuard)
     @Put("/allocateSalary")
     @UsePipes(new ValidationPipe)
-    async allocateSalaryBasedOnRole(@Body() data:AllocateSalary, @Request() req): Promise<Object> {
+    async allocateSalaryBasedOnRole(@Body() data: AllocateSalary, @Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
-        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
             return {
                 message: "Invalid Auth Token.",
             }
@@ -468,7 +471,7 @@ export class AdminController {
         if (dbRoldId == null) {
             throw new BadRequestException("No Role found with this name.");
         }
-        if (await this.adminService.allocateSalaryBasedOnRole(dbRoldId,data.Salary) == true) {
+        if (await this.adminService.allocateSalaryBasedOnRole(dbRoldId, data.Salary) == true) {
             return {
                 message: "Salary allocated Successfully.",
             }
@@ -482,7 +485,7 @@ export class AdminController {
     async getRoleBasedSalaryInfo(@Param("roleName") roleName: string, @Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
-        if(payload.role !=await this.adminService.getRoleIdByName("admin")){
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
             return {
                 message: "Invalid Auth Token.",
             }
@@ -506,4 +509,55 @@ export class AdminController {
     }
 
     //#endregion : Allocate Salary based on Role
+
+    //#region : attendance
+
+    @UseGuards(adminAuthGuard)
+    @Post("/attendance/import")
+    @UsePipes(new ValidationPipe)
+    @UseInterceptors(FileInterceptor('file'))
+    async importAttendanceXlsxData(@UploadedFile() file: Express.Multer.File) {
+        if (!file) {
+            throw new BadRequestException('No file uploaded');
+        }
+
+        const workbook = new ExcelJS.Workbook();
+        const stream = Readable.from(file.buffer);
+
+        const rows: AttendanceReports[] = [];
+        await workbook.xlsx.read(stream)
+            .then(function () {
+                const worksheet = workbook.worksheets[0]; // Assuming data is in the first worksheet
+                worksheet.eachRow(function (row, rowNumber) {
+                    if (rowNumber !== 1) { // Skip the header row
+                        const attendanceReport = new AttendanceReports();
+                        attendanceReport.Year = parseInt(row.getCell(1).value as string); //Year
+                        attendanceReport.Email = row.getCell(2).value as string; //Email
+                        attendanceReport.Jan = parseInt(row.getCell(3).value as string);
+                        attendanceReport.Feb = parseInt(row.getCell(4).value as string);
+                        attendanceReport.Mar = parseInt(row.getCell(5).value as string);
+                        attendanceReport.Apr = parseInt(row.getCell(6).value as string);
+                        attendanceReport.May = parseInt(row.getCell(7).value as string);
+                        attendanceReport.Jun = parseInt(row.getCell(8).value as string);
+                        attendanceReport.Jul = parseInt(row.getCell(9).value as string);
+                        attendanceReport.Aug = parseInt(row.getCell(10).value as string);
+                        attendanceReport.Sep = parseInt(row.getCell(11).value as string);
+                        attendanceReport.Oct = parseInt(row.getCell(12).value as string);
+                        attendanceReport.Nov = parseInt(row.getCell(13).value as string);
+                        attendanceReport.Dec = parseInt(row.getCell(14).value as string);
+                        rows.push(attendanceReport);
+                    }
+                });
+            })
+            .catch(function (error) {
+                console.error('Error reading Excel file:', error);
+            });
+        if (await this.adminService.importAttendanceXlsxDataToDB(rows) == false) {
+            throw new InternalServerErrorException('Data not saved to database');
+        }
+
+        return { message: 'Excel file uploaded and data imported successfully' };
+    }
+
+    //#endregion : attendance
 }

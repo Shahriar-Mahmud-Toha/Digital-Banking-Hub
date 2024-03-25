@@ -3,10 +3,12 @@ import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, PrimaryColumn, Ge
 
 @Entity("AttendanceReports")
 export class AttendanceReports {
-    @PrimaryColumn()
+    @PrimaryGeneratedColumn()
+    Id: Number;
+    @Column()
     Year: Number;
     @Column({name:"Email"})
-    Email: String;
+    Email: string;
     @Column()
     Jan: Number;
     @Column()

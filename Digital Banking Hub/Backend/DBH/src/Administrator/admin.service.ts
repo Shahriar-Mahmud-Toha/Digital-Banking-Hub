@@ -585,4 +585,27 @@ export class AdminService {
     }
 
     //#endregion : Allocating Salary
+
+    //#region : attendance
+    
+    async importAttendanceXlsxDataToDB(data: AttendanceReports[]): Promise<boolean> {
+        try {
+            const authEmails = (await this.authenticationRepository.find({ select: ['Email'] })).map(auth => auth.Email);
+            const filteredData = data.filter(row => authEmails.includes(row.Email));
+            for (const row of filteredData) {
+                const existingRecord = await this.attendanceReportsRepository.find({where: {Year: row.Year, Email: row.Email} });
+                if (existingRecord.length!=0) {
+                    await this.attendanceReportsRepository.update(existingRecord[0], row);
+                } else {
+                    await this.attendanceReportsRepository.save(row);
+                }
+            }
+            return true;
+        } catch (error) {
+            console.error('Error importing attendance data:', error);
+            return false;
+        }
+    }
+
+    //#endregion : attendance
 }
