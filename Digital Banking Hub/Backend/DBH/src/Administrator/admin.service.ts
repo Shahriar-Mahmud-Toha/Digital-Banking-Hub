@@ -696,4 +696,22 @@ export class AdminService {
     }
 
     //#endregion: Users
+
+    //#region : Dashboard
+
+    async showDashboardReport(): Promise<Object> {
+        try{
+            return {
+                RTGS:3045000,
+                NPSB:2050000,
+                BFTN:6000000
+            }
+        }
+        catch(error){
+            console.log(error);
+            return null;
+        }
+    }
+
+    //#endregion: Dashboard
 }

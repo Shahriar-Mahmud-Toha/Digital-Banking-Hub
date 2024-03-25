@@ -666,4 +666,33 @@ export class AdminController {
     }
 
     //#endregion : users
+
+    //#region : Dashboard
+    
+    @UseGuards(adminAuthGuard)
+    @Get("/showReport")
+    @UsePipes(new ValidationPipe)
+    async showDashboardReport(@Request() req): Promise<Object> {
+        const token = req.headers.authorization.split(' ')[1];
+        const payload = this.jwtService.decode(token) as { email: string, role: string };
+        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
+            return {
+                message: "Invalid Auth Token.",
+            }
+        }
+        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        if (exData == null) {
+            throw new BadRequestException("No Admin found associated with this credentials.");
+        }
+        const res = await this.adminService.showDashboardReport();
+        if (res != null) {
+            return {
+                message: "Operation Successful",
+                Data: res
+            }
+        }
+        throw new InternalServerErrorException("Report not generated.");
+    }
+
+    //#endregion : Dashboard
 }
