@@ -5,6 +5,7 @@ import { AppService } from './app.service';
 import { ManagerModule } from './Manager/manager.module';
 import { AdminModule } from './Administrator/admin.module';
 import { adminAuthModule } from './Administrator/Auth/adminAuth.module';
+import { managerAuthModule } from './Manager/Auth/managerAuth.module';
 
 @Module({
   imports: [AdminModule, ManagerModule,TypeOrmModule.forRoot(
@@ -13,11 +14,12 @@ import { adminAuthModule } from './Administrator/Auth/adminAuth.module';
     port: 5432,
     username: 'postgres',
     password: 'root',
-    database: 'DBH',
+    database: 'DBHMID',
     autoLoadEntities: true,
     synchronize: true,
     } ),
     adminAuthModule,
+    managerAuthModule
   ],
   controllers: [AppController],
   providers: [AppService],
