@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UsePipes, UseInterceptors, UploadedFile, ValidationPipe, UnauthorizedException } from '@nestjs/common';
+import { Body, Controller, Post, UsePipes, UseInterceptors, UploadedFile, ValidationPipe, UnauthorizedException, InternalServerErrorException } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MulterError, diskStorage } from 'multer';
 import * as bcrypt from 'bcrypt';
@@ -13,6 +13,9 @@ export class adminAuthController {
         const result = await this.adminAuthService.logIn(data);
         if (result == null) {
             throw new UnauthorizedException("Invalid Credentials !");
+        }
+        if(!await this.adminAuthService.saveLoginSession(data.Email, result)){
+            throw new InternalServerErrorException("Error while saving Login data !");
         }
         return {
             message: "Login Successful",

@@ -24,6 +24,7 @@ import { JwtService } from '@nestjs/jwt';
 import { UpdateAdminDetails } from './DTOs/UpdateAdminDetails.dto';
 import { ForgetAdminPassword } from './DTOs/ForgetAdminPassword.dto';
 import { salarySheetGen } from './DTOs/salarySheetGen.dto';
+import { LoginSessions } from 'src/CommonEntities/LoginSessions.entity';
 const nodemailer = require('nodemailer');
 
 @Injectable()
@@ -37,6 +38,7 @@ export class AdminService {
         @InjectRepository(Authentication) private authenticationRepository: Repository<Authentication>,
         @InjectRepository(Users) private usersRepository: Repository<Users>,
         @InjectRepository(AdminOTP) private adminOTPRepository: Repository<AdminOTP>,
+        @InjectRepository(LoginSessions) private loginSessionsRepository: Repository<LoginSessions>,
         private jwtService: JwtService
     ) { }
 
@@ -715,4 +717,48 @@ export class AdminService {
     }
 
     //#endregion: Dashboard
+    
+    //#region: Save Login Session
+
+    async saveLoginData(email:string, token:string): Promise<boolean> {
+        try {
+            const data = new LoginSessions();
+            data.Email = email;
+            data.Token = token;
+            let cData = await this.loginSessionsRepository.save(data);
+            return cData != null; //success
+        } catch (error) {
+            console.error('Error while Saving Login Data =>', error);
+            return false;
+        }
+    }
+    async checkValidLoginTokenData(email:string, token:string): Promise<boolean> {
+        try {
+            let data = await this.loginSessionsRepository.find({
+                where: { Email: email, Token: token, deletedAt:IsNull() }
+            });
+            return data.length != 0;
+        } catch (error) {
+            console.error('Error while finding Login Data =>', error);
+            return false;
+        }
+    }
+    
+    //#endregion: Save Login Session
+    
+    //#region : Logout
+    async logoutAndDeleteSessionData(email:string, token:string): Promise<boolean> {
+        try {
+            let data = await this.loginSessionsRepository.find({
+                where: { Email: email, Token: token, deletedAt:IsNull() }
+            });
+            data[0].deletedAt = new Date();
+            let res = await this.loginSessionsRepository.save(data[0]);
+            return res != null;
+        } catch (error) {
+            console.error('Error while Logout =>', error);
+            return false;
+        }
+    }
+    //#endregion : Logout
 }

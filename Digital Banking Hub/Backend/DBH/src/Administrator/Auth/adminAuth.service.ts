@@ -32,4 +32,10 @@ export class adminAuthService {
             return null;
         }
     }
+    async saveLoginSession(email:string, token:string): Promise<boolean> {
+        return await this.adminService.saveLoginData(email,token);
+    }
+    async checkValidLoginToken(email:string, token:string): Promise<boolean> {
+        return await this.adminService.checkValidLoginTokenData(email,token);
+    }
 }
