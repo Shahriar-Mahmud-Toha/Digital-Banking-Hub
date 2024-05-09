@@ -1,15 +1,15 @@
-import { AdminOTP } from 'src/Administrator/AdminOTP.entity';
+import { Entity, Column, PrimaryColumn, Generated, ManyToMany, ManyToOne, JoinColumn, OneToOne, OneToMany } from 'typeorm';
 import { AttendanceReports } from 'src/Administrator/AttendanceReports.entity';
 import { Role } from 'src/Administrator/Role.entity';
 import { SalarySheet } from 'src/Administrator/SalarySheet.entity';
 import { Users } from 'src/CommonEntities/Users.entity';
-import { Entity, Column, PrimaryColumn, Generated, ManyToMany, ManyToOne, JoinColumn, OneToOne, OneToMany } from 'typeorm';
 
 @Entity("Authentication")
-export class Authentication {
-    @PrimaryColumn()
+export class Authentication{
+
+    @PrimaryColumn({name:'Email', type: 'varchar', length: 100}) 
     Email: string;
-    @Column()
+    @Column({ type: 'varchar' })
     Password: string;
     @Column({name:"RoleID"})
     RoleID: string;
@@ -24,4 +24,5 @@ export class Authentication {
     AttendanceReports:AttendanceReports[];
     @OneToMany(()=>SalarySheet, SalarySheet=>SalarySheet.Authentication)
     SalarySheet:SalarySheet[];
+    
 }

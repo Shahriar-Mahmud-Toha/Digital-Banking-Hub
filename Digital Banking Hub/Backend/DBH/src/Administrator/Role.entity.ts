@@ -1,5 +1,6 @@
 import { randomBytes } from 'crypto';
-import { Authentication } from 'src/Authentication/Authentication.entity';
+// import { Authentication } from 'src/Authentication/Authentication.entity';
+import { Authentication } from 'src/Authentication/auth.entity';
 import { Entity, Column, PrimaryGeneratedColumn, BeforeInsert, PrimaryColumn, Generated, OneToMany, OneToOne } from 'typeorm';
 import { BaseSalary } from './BaseSalary.entity';
 

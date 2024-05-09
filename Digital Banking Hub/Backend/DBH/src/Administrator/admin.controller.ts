@@ -619,21 +619,21 @@ export class AdminController {
 
     //#region : users
 
-    @UseGuards(adminAuthGuard)
+    // @UseGuards(adminAuthGuard)
     @Get("/getDetails/allUsers")
     @UsePipes(new ValidationPipe)
     async getAllUsersDetails(@Request() req): Promise<Object> {
-        const token = req.headers.authorization.split(' ')[1];
-        const payload = this.jwtService.decode(token) as { email: string, role: string };
-        if (payload.role != await this.adminService.getRoleIdByName("admin")) {
-            return {
-                message: "Invalid Auth Token.",
-            }
-        }
-        const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
-        if (exData == null) {
-            throw new BadRequestException("No Admin found associated with this credentials.");
-        }
+        // const token = req.headers.authorization.split(' ')[1];
+        // const payload = this.jwtService.decode(token) as { email: string, role: string };
+        // if (payload.role != await this.adminService.getRoleIdByName("admin")) {
+        //     return {
+        //         message: "Invalid Auth Token.",
+        //     }
+        // }
+        // const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+        // if (exData == null) {
+        //     throw new BadRequestException("No Admin found associated with this credentials.");
+        // }
         const res = await this.adminService.getAllUsersDetails();
         if (res != null) {
             return {
