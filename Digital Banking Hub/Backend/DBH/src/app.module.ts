@@ -8,6 +8,7 @@ import { ManagerModule } from './Manager/manager.module';
 import { EmployeeModule } from './Employee/employee.module';
 import { AuthModule } from './Authentication/auth.module';
 import { UserModule } from './User/user.module';
+import { managerAuthModule } from './Manager/Auth/managerAuth.module';
 
 @Module({
   imports: [AdminModule, ManagerModule,EmployeeModule,UserModule,TypeOrmModule.forRoot(
@@ -16,11 +17,11 @@ import { UserModule } from './User/user.module';
     port: 5432,
     username: 'postgres',
     password: 'root',
-    database: 'DBHMID',
+    database: 'DBH',
     autoLoadEntities: true,
     synchronize: true,
     } ),
-    adminAuthModule,AuthModule,
+    adminAuthModule,AuthModule,managerAuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

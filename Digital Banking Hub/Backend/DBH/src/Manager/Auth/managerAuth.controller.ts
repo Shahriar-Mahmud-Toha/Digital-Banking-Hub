@@ -6,13 +6,14 @@ import { managerAuthService } from './managerAuth.service';
 import { managerLogin } from '../DTOs/ManagerLogin.dto';
 
 
-@Controller('managerAuth')
+@Controller('auth/manager')
 export class managerAuthController {
     constructor(private managerAuthService: managerAuthService) { }
+    
     @Post("/login")
     @UsePipes(new ValidationPipe)
     async loginManager(@Body() data: managerLogin): Promise<Object> {
-        console.log("login data",data)
+        console.log("login data",data);
 
         const result = await this.managerAuthService.logIn(data);
         console.log(result)
