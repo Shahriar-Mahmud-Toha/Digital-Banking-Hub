@@ -322,18 +322,45 @@ export class AdminController {
             throw error;
         }
     }
-    @UseGuards(adminAuthGuard)
-    @Get("/profile/get/data")
+    // @UseGuards(adminAuthGuard)
+    // @Get("/profile/get/data")
+    // @UsePipes(new ValidationPipe)
+    // async GetProfileData(@Request() req): Promise<Object> {
+    //     try {
+    //         const token = req.headers.authorization.split(' ')[1];
+    //         const payload = this.jwtService.decode(token) as { email: string, role: string };
+    //         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+    //         if (exData == null) {
+    //             throw new BadRequestException("No Admin found associated with this credentials.");
+    //         }
+    //         const result = await this.adminService.getAdminDetails(payload.email);
+    //         if (result != null) {
+    //             return {
+    //                 message: "Operation Successful.",
+    //                 userId: result.userId,
+    //                 Email: result.Email,
+    //                 FullName: result.FullName,
+    //                 Gender: result.Gender,
+    //                 DateOfBirth: result.DOB,
+    //                 NID: result.NID,
+    //                 Phone: result.Phone,
+    //                 Address: result.Address,
+    //             }
+    //         }
+    //         throw new InternalServerErrorException("Profile Picture update operation failed due to database error.");
+    //     } catch (error) {
+    //         console.log(error);
+    //         throw error;
+    //     }
+    // }
+    
+    // @UseGuards(adminAuthGuard)
+    @Get("/profile/get/data/:email")
     @UsePipes(new ValidationPipe)
-    async GetProfileData(@Request() req): Promise<Object> {
+    async GetProfileData(@Param("email") email): Promise<Object> {
         try {
-            const token = req.headers.authorization.split(' ')[1];
-            const payload = this.jwtService.decode(token) as { email: string, role: string };
-            const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
-            if (exData == null) {
-                throw new BadRequestException("No Admin found associated with this credentials.");
-            }
-            const result = await this.adminService.getAdminDetails(payload.email);
+            
+            const result = await this.adminService.getAdminDetails(email);
             if (result != null) {
                 return {
                     message: "Operation Successful.",
