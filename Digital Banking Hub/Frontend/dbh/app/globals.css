@@ -3,7 +3,27 @@
 @tailwind utilities;
 
 :root {
-  /* --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255; */
+
+  --mainBgCol: rgb(38, 41, 46);
+    --mainBgColAdmin: rgb(30, 32, 37);
+    --mainBgColAdminSidebar: rgb(38, 41, 46);
+    --BgColDepth1: rgb(22, 24, 28);
+    --placeHolderCol: #b1b1b1;
+    --inputBoxBorderCol: rgb(43, 149, 240);
+    --submitBtnBgCol: rgb(14, 180, 138);
+    --submitBtnBgColHover: rgb(50, 191, 156);
+    --rememberlabelCol: rgb(235, 235, 235);
+    --inputBoxInvalidCol: rgb(255, 82, 96);
+    --hoverCol: rgb(255, 47, 65);
+    --SuccessMsgCol: rgb(50, 191, 156);
+    --dashBoardItemBgCol: rgb(22, 24, 28);
+}
+.adminTextInput{
+  background-color: #16181C;
+}
+.adminTextInput input{
+  color: white;
+}
+.cusPlaceHolder{
+  color: var(--placeHolderCol);
 }
