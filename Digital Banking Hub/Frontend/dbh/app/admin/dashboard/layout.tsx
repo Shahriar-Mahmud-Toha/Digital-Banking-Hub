@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from 'next/link'
-import AdminHeader from "../components/admin/header_admin";
-import "../globals.css";
+import "../../globals.css";
+import AdminPrivateHeader from "@/app/components/admin/header_private_admin";
 
 export const metadata: Metadata = {
-  title: "DBH - Admin - SignUp",
-  description: "Digital Banking Hub - Admin SignUp page",
+  title: "DBH - Admin - Dashboard",
+  description: "Digital Banking Hub - Admin Dashboard",
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
 
   return (
     <>
-      <AdminHeader />
+      <AdminPrivateHeader />
       {children}
     </>
   );
