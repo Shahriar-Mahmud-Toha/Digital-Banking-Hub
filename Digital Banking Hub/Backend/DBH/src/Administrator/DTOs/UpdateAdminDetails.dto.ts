@@ -12,17 +12,8 @@ export class UpdateAdminDetails{
     Gender: string;
     
     @IsNotEmpty({ message: 'Date of Birth is required' })
-    // @IsValidDate({ message: 'Invalid Date of Birth format' })
-    @IsDateString()
-    // @IsISO8601({ strict: true, strictSeparator: true })
-    // @Transform(({ value }) => {
-    //   const isValidDate = isISO8601(value, { strict: true, strictSeparator: true });
-    //   if (!isValidDate) {
-    //     throw new Error('Date of Birth should be a valid ISO8601 date format');
-    //   }
-    //   return new Date(value);
-    // })
-    @IsNotEmpty()
+    @IsDate()
+    @Transform(({ value }) => new Date(value))
     DateOfBirth: Date;
     
     @IsNotEmpty({ message: 'NID is required' })

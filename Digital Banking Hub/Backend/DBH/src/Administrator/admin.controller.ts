@@ -1,8 +1,7 @@
 //#region : imports
 import { BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, Param, Patch, Post, Put, Query, Req, UseGuards, UsePipes, ValidationPipe, Request, Res } from "@nestjs/common";
 import { AdminService } from "./admin.service";
-import { UseInterceptors, UploadedFile }
-    from '@nestjs/common';
+import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { MulterError, diskStorage } from "multer";
 import { adminSignup } from "./DTOs/AdminSignup.dto";
@@ -139,6 +138,7 @@ export class AdminController {
         if (result == 1) {
             return {
                 message: "OTP Sent to your email successfully. Submit OTP and complete signup process.",
+                status:1
             }
         }
         else if (result == -1) {
@@ -162,6 +162,7 @@ export class AdminController {
         if (result == 1) {
             return {
                 message: "OTP Verified Successfully. Submit Account Details and complete signup process.",
+                status: 1
             }
         }
         else if (result == 0) {
@@ -206,14 +207,11 @@ export class AdminController {
             if (result == false) {
                 throw new BadRequestException("No Admin found associated with this email.");
             }
-
             const user = await this.adminService.findAdminDetailsByEmail(data.Email);
             if (user != false) {
                 throw new BadRequestException("Admin Details already exist.");
             }
-
             if (await this.adminService.insertAdminDetails(data, picture.filename)) {
-
                 const sourcePath = join(tempFolder, picture.filename);
                 const destinationPath = join(storageFolder, picture.filename);
                 if (!existsSync(storageFolder)) {
@@ -222,7 +220,8 @@ export class AdminController {
                 renameSync(sourcePath, destinationPath);
 
                 return {
-                    message: "Account Details Added Successfully."
+                    message: "Account Details Added Successfully.",
+                    status:1
                 };
             } else {
                 throw new InternalServerErrorException("Database Operation for Account Details Insertion is Failed.");

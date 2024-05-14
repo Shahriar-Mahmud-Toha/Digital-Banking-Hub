@@ -329,6 +329,7 @@ export class AdminService {
     }
     async insertAdminDetails(data: AdminDetails, fileName: string): Promise<boolean> {
         try {
+
             let cData = await this.usersRepository.save(await this.AdminDetailsDTOtoUser(data, fileName));
             let adminData = await this.authenticationRepository.find({
                 where: { Email: data.Email, RoleID: await this.getRoleIdByName("admin") }
@@ -414,7 +415,8 @@ export class AdminService {
         newData.Email = data.Email;
         newData.FullName = data.FullName;
         newData.FileName = fileName;
-        newData.DOB = parse(data.DateOfBirth.toString(), 'dd-MM-yyyy', new Date());
+        // newData.DOB = parse(data.DateOfBirth.toString(), 'dd-MM-yyyy', new Date());
+        newData.DOB = data.DateOfBirth;
         newData.Gender = data.Gender;
         newData.NID = data.NID;
         newData.Phone = data.Phone;
