@@ -24,12 +24,13 @@ import { ForgetAdminPassword } from './DTOs/ForgetAdminPassword.dto';
 import { AllocateSalary } from './DTOs/AllocateSalary.dto';
 import { salarySheetGen } from './DTOs/salarySheetGen.dto';
 import { LoginSessions } from 'src/CommonEntities/LoginSessions.entity';
+import { TransactionEntity } from 'src/Employee/Entity/transaction.entity';
 // import nodemailer from 'nodemailer';
 // const nodemailer = require('nodemailer');
 
 
 @Module({
-  imports: [adminSignup, AdminDetails,UpdateAdminDetails,UpdateAdminEmail,salarySheetGen,AllocateSalary, ForgetAdminPassword, submitOtp, TypeOrmModule.forFeature([Role, BaseSalary, AttendanceReports, SalarySheet, ProductKeys, Authentication, Users, AdminOTP, LoginSessions]),
+  imports: [adminSignup, AdminDetails,UpdateAdminDetails,UpdateAdminEmail,salarySheetGen,AllocateSalary, ForgetAdminPassword, submitOtp, TypeOrmModule.forFeature([Role, BaseSalary, AttendanceReports, SalarySheet, ProductKeys, Authentication, Users, AdminOTP, LoginSessions, TransactionEntity]),
     // JwtModule.register({
     //   global: true,
     //   secret: "3NP_Backend_Admin",

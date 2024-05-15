@@ -12,14 +12,4 @@ export class adminSignup{
     
     @IsNotEmpty()
     ActivationKey: string;
-    
-    // @IsNotEmpty()
-    // @Length(4, undefined, { message: "Name must be at least 4 characters long" })
-    // name:string;
-    // @IsNotEmpty()
-    // @IsIn(["male", "female"], { message: "Gender must be 'male' or 'female'" })
-    // gender:string;
-    // @IsNotEmpty()
-    // @Matches(/^[0-9]+$/, { message: "Phone number must contain only numbers" })
-    // phone: string;
 }

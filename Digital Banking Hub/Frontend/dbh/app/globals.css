@@ -27,3 +27,15 @@
 .cusPlaceHolder{
   color: var(--placeHolderCol);
 }
+.dCard{
+  max-height: 140px;
+  max-width: 170px;
+}
+.dSubTitle{
+  background-color: #222529;
+}
+
+.profilePic{
+  max-height: 150px;
+  max-width: 150px;
+}

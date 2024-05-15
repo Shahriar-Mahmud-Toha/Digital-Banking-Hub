@@ -1,6 +1,6 @@
 import { ConsoleLogger, Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { IsNull, MoreThan, Repository } from 'typeorm';
+import { Between, IsNull, MoreThan, Repository } from 'typeorm';
 import { Role } from './Role.entity';
 import { SalarySheet } from './SalarySheet.entity';
 import { ProductKeys } from './ProductKeys.entity';
@@ -25,6 +25,7 @@ import { UpdateAdminDetails } from './DTOs/UpdateAdminDetails.dto';
 import { ForgetAdminPassword } from './DTOs/ForgetAdminPassword.dto';
 import { salarySheetGen } from './DTOs/salarySheetGen.dto';
 import { LoginSessions } from 'src/CommonEntities/LoginSessions.entity';
+import { TransactionEntity } from 'src/Employee/Entity/transaction.entity';
 const nodemailer = require('nodemailer');
 
 @Injectable()
@@ -39,6 +40,7 @@ export class AdminService {
         @InjectRepository(Users) private usersRepository: Repository<Users>,
         @InjectRepository(AdminOTP) private adminOTPRepository: Repository<AdminOTP>,
         @InjectRepository(LoginSessions) private loginSessionsRepository: Repository<LoginSessions>,
+        @InjectRepository(TransactionEntity) private transactionRepository: Repository<TransactionEntity>,
         private jwtService: JwtService
     ) { }
 
@@ -547,8 +549,8 @@ export class AdminService {
     //#endregion : Admin
 
     //#region : Allocating Salary
-    
-    async allocateSalaryBasedOnRole(roleId:string, salary: number): Promise<boolean> {
+
+    async allocateSalaryBasedOnRole(roleId: string, salary: number): Promise<boolean> {
         try {
             let exRoleData = await this.baseSalaryRepository.find({
                 where: { RoleId: roleId }
@@ -574,7 +576,7 @@ export class AdminService {
         }
     }
 
-    async getRoleBasedSalaryInfo(roleId:string): Promise<BaseSalary> {
+    async getRoleBasedSalaryInfo(roleId: string): Promise<BaseSalary> {
         try {
             let roleData = await this.baseSalaryRepository.find({
                 where: { RoleId: roleId }
@@ -593,14 +595,14 @@ export class AdminService {
     //#endregion : Allocating Salary
 
     //#region : attendance
-    
+
     async importAttendanceXlsxDataToDB(data: AttendanceReports[]): Promise<boolean> {
         try {
             const authEmails = (await this.authenticationRepository.find({ select: ['Email'] })).map(auth => auth.Email);
             const filteredData = data.filter(row => authEmails.includes(row.Email));
             for (const row of filteredData) {
-                const existingRecord = await this.attendanceReportsRepository.find({where: {Year: row.Year, Email: row.Email} });
-                if (existingRecord.length!=0) {
+                const existingRecord = await this.attendanceReportsRepository.find({ where: { Year: row.Year, Email: row.Email } });
+                if (existingRecord.length != 0) {
                     await this.attendanceReportsRepository.update(existingRecord[0], row);
                 } else {
                     await this.attendanceReportsRepository.save(row);
@@ -612,11 +614,11 @@ export class AdminService {
             return false;
         }
     }
-    async getAttendanceReport(): Promise<AttendanceReports []> {
-        try{
+    async getAttendanceReport(): Promise<AttendanceReports[]> {
+        try {
             return await this.attendanceReportsRepository.find();
         }
-        catch(error){
+        catch (error) {
             console.log(error);
             return null;
         }
@@ -630,37 +632,35 @@ export class AdminService {
             const attendanceData = await this.attendanceReportsRepository.find({
                 where: { Year: data.year },
             });
-    
+
             const authData = await this.authenticationRepository.find({
                 select: ["Email", "RoleID"]
             });
-    
+
             const baseSalaryData = await this.baseSalaryRepository.find();
-    
+
             let salarySheets: SalarySheet[] = [];
-    
+
             for (const attendance of attendanceData) {
                 const { Email } = attendance;
                 const authInfo = authData.find(auth => auth.Email === Email);
                 const baseSalaryInfo = baseSalaryData.find(salary => salary.RoleId === authInfo.RoleID);
-    
                 let salarySheet = await this.salarySheetRepository.findOne({
                     where: { Year: data.year, Email: Email }
                 });
-    
                 if (!salarySheet) {
                     salarySheet = new SalarySheet();
                     salarySheet.Year = data.year;
                     salarySheet.Email = Email;
                 }
-    
-                salarySheet[data.month] = (attendance[data.month] || 0) * (baseSalaryInfo.Salary / 30.0);
-    
+
+                salarySheet[data.month] = Math.round((attendance[data.month] || 0) * (baseSalaryInfo.Salary / 30.0));
+
                 await this.salarySheetRepository.save(salarySheet);
-    
+
                 salarySheets.push(salarySheet);
             }
-            
+
             return await this.salarySheetRepository.find({
                 where: { Year: data.year }
             });
@@ -669,32 +669,32 @@ export class AdminService {
             return null;
         }
     }
-    
+
 
     //#endregion : Salary Sheet
 
     //#region : Users
 
-    async getAllUsersDetails(): Promise<Users []> {
-        try{
+    async getAllUsersDetails(): Promise<Users[]> {
+        try {
             return await this.usersRepository.find();
         }
-        catch(error){
+        catch (error) {
             console.log(error);
             return null;
         }
     }
-    async deActivateUser(email:string): Promise<boolean> {
-        try{
-            let data = await this.authenticationRepository.findOne({where:{Email:email}});
-            if(data==null){
+    async deActivateUser(email: string): Promise<boolean> {
+        try {
+            let data = await this.authenticationRepository.findOne({ where: { Email: email } });
+            if (data == null) {
                 return null;
             }
             data.Active = false;
             let res = await this.authenticationRepository.save(data);
             return res != null;
         }
-        catch(error){
+        catch (error) {
             console.log(error);
             return null;
         }
@@ -704,25 +704,44 @@ export class AdminService {
 
     //#region : Dashboard
 
-    async showDashboardReport(): Promise<Object> {
-        try{
-            return {
-                RTGS:3045000,
-                NPSB:2050000,
-                BFTN:6000000
-            }
-        }
-        catch(error){
-            console.log(error);
+    async showDashboardDailyTransactionReport(): Promise<object> {
+        try {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const tomorrow = new Date(today);
+            tomorrow.setDate(today.getDate() + 1);
+
+            // Fetch transactions for the current date
+            const transactions = await this.transactionRepository.find({
+                where: {
+                    applicationTime: Between(today, tomorrow),
+                },
+            });
+            // Reduce transactions to sum up amounts by transferType
+            const result = transactions.reduce((acc, curr) => {
+                const transferType = curr.transferType;
+                const amount = curr.amount;
+
+                if (!acc[transferType]) {
+                    acc[transferType] = 0;
+                }
+                acc[transferType] += amount;
+                return acc;
+            }, {});
+            // Return the result
+            return result;
+        } catch (error) {
+            console.error(error);
             return null;
         }
     }
 
     //#endregion: Dashboard
-    
+
     //#region: Save Login Session
 
-    async saveLoginData(email:string, token:string): Promise<boolean> {
+    async saveLoginData(email: string, token: string): Promise<boolean> {
         try {
             const data = new LoginSessions();
             data.Email = email;
@@ -734,10 +753,10 @@ export class AdminService {
             return false;
         }
     }
-    async checkValidLoginTokenData(email:string, token:string): Promise<boolean> {
+    async checkValidLoginTokenData(email: string, token: string): Promise<boolean> {
         try {
             let data = await this.loginSessionsRepository.find({
-                where: { Email: email, Token: token, deletedAt:IsNull() }
+                where: { Email: email, Token: token, deletedAt: IsNull() }
             });
             return data.length != 0;
         } catch (error) {
@@ -745,14 +764,14 @@ export class AdminService {
             return false;
         }
     }
-    
+
     //#endregion: Save Login Session
-    
+
     //#region : Logout
-    async logoutAndDeleteSessionData(email:string, token:string): Promise<boolean> {
+    async logoutAndDeleteSessionData(email: string, token: string): Promise<boolean> {
         try {
             let data = await this.loginSessionsRepository.find({
-                where: { Email: email, Token: token, deletedAt:IsNull() }
+                where: { Email: email, Token: token, deletedAt: IsNull() }
             });
             data[0].deletedAt = new Date();
             let res = await this.loginSessionsRepository.save(data[0]);

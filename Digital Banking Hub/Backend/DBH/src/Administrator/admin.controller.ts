@@ -1,5 +1,5 @@
 //#region : imports
-import { BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, Param, Patch, Post, Put, Query, Req, UseGuards, UsePipes, ValidationPipe, Request, Res } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Delete, Get, InternalServerErrorException, Param, Patch, Post, Put, Query, Req, UseGuards, UsePipes, ValidationPipe, Request, Res, UnauthorizedException } from "@nestjs/common";
 import { AdminService } from "./admin.service";
 import { UseInterceptors, UploadedFile } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -40,9 +40,7 @@ export class AdminController {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
         if (payload.role != await this.adminService.getRoleIdByName("admin")) {
-            return {
-                message: "Invalid Auth Token.",
-            }
+            throw new UnauthorizedException("Invalid Auth Token.");
         }
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
         if (exData == null) {
@@ -50,7 +48,8 @@ export class AdminController {
         }
         return {
             message: "Role Created Successfully",
-            RoleID: await this.adminService.CreateRole(data["Name"])
+            RoleID: await this.adminService.CreateRole(data["Name"]),
+            status:1
         }
     }
     @UseGuards(adminAuthGuard)
@@ -60,9 +59,7 @@ export class AdminController {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
         if (payload.role != await this.adminService.getRoleIdByName("admin")) {
-            return {
-                message: "Invalid Auth Token.",
-            }
+            throw new UnauthorizedException("Invalid Auth Token.");
         }
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
         if (exData == null) {
@@ -77,6 +74,7 @@ export class AdminController {
         else {
             return {
                 message: "Role Updated Successfully.",
+                status:1
             }
         }
     }
@@ -87,9 +85,7 @@ export class AdminController {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
         if (payload.role != await this.adminService.getRoleIdByName("admin")) {
-            return {
-                message: "Invalid Auth Token.",
-            }
+            throw new UnauthorizedException("Invalid Auth Token.");
         }
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
         if (exData == null) {
@@ -104,6 +100,7 @@ export class AdminController {
         else {
             return {
                 message: "Role Deleted Successfully.",
+                status:1
             }
         }
     }
@@ -114,9 +111,7 @@ export class AdminController {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
         if (payload.role != await this.adminService.getRoleIdByName("admin")) {
-            return {
-                message: "Invalid Auth Token.",
-            }
+            throw new UnauthorizedException("Invalid Auth Token.");
         }
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
         if (exData == null) {
@@ -138,7 +133,7 @@ export class AdminController {
         if (result == 1) {
             return {
                 message: "OTP Sent to your email successfully. Submit OTP and complete signup process.",
-                status:1
+                status: 1
             }
         }
         else if (result == -1) {
@@ -221,7 +216,7 @@ export class AdminController {
 
                 return {
                     message: "Account Details Added Successfully.",
-                    status:1
+                    status: 1
                 };
             } else {
                 throw new InternalServerErrorException("Database Operation for Account Details Insertion is Failed.");
@@ -352,8 +347,8 @@ export class AdminController {
             throw error;
         }
     }
-    
-    
+
+
     @UseGuards(adminAuthGuard)
     @Get("/profile/get/profilePicture")
     @UsePipes(new ValidationPipe)
@@ -376,6 +371,26 @@ export class AdminController {
         } catch (error) {
             console.log(error);
             throw error;
+        }
+    }
+    @UseGuards(adminAuthGuard)
+    @Get("/profile/get/profilePicture/:picturename")
+    @UsePipes(new ValidationPipe)
+    async GetSpecificProfilePicture(@Param("picturename") picturename:string, @Res() res, @Request() req): Promise<Object> {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const payload = this.jwtService.decode(token) as { email: string, role: string };
+            const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
+            if (exData == null) {
+                throw new BadRequestException("No Admin found associated with this credentials.");
+            }
+            return {
+                message: "Operation Successful.",
+                File: res.sendFile(picturename, { root: './uploads/admin/storage/' })
+            }
+        } catch (error) {
+            console.log(error);
+            throw new InternalServerErrorException("Profile Picture update operation failed due to database error.=>",error);
         }
     }
     @UseGuards(adminAuthGuard)
@@ -517,8 +532,8 @@ export class AdminController {
 
     //#region : attendance
 
-    @UseGuards(adminAuthGuard)
     @Post("/attendance/import")
+    @UseGuards(adminAuthGuard)
     @UsePipes(new ValidationPipe)
     @UseInterceptors(FileInterceptor('file'))
     async importAttendanceXlsxData(@UploadedFile() file: Express.Multer.File) {
@@ -561,7 +576,10 @@ export class AdminController {
             throw new InternalServerErrorException('Data not saved to database');
         }
 
-        return { message: 'Excel file uploaded and data imported successfully' };
+        return {
+            message: 'Excel file uploaded and data imported successfully',
+            status: 1
+        };
     }
 
     @UseGuards(adminAuthGuard)
@@ -583,13 +601,13 @@ export class AdminController {
         if (res != null) {
             return {
                 message: "Operation Successful",
-                data:res
+                data: res
             }
         }
         throw new InternalServerErrorException("Attendance Report generation failed due to database error");
     }
     //#endregion : attendance
-    
+
     //#region : Salary Sheet
 
     @UseGuards(adminAuthGuard)
@@ -611,7 +629,7 @@ export class AdminController {
         if (res != null) {
             return {
                 message: "Operation Successful",
-                data:res
+                data: res
             }
         }
         throw new InternalServerErrorException("Salary generation failed due to database error");
@@ -627,7 +645,7 @@ export class AdminController {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
         if (payload.role != await this.adminService.getRoleIdByName("admin")) {
-            throw new BadRequestException("Invalid Auth Token");
+            throw new UnauthorizedException("Invalid Auth Token");
         }
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
         if (exData == null) {
@@ -637,7 +655,7 @@ export class AdminController {
         if (res != null) {
             return {
                 message: "Operation Successful",
-                data:res
+                data: res
             }
         }
         throw new InternalServerErrorException("Users details getting operation failed due to database error");
@@ -646,7 +664,7 @@ export class AdminController {
     @UseGuards(adminAuthGuard)
     @Post("/deActivate")
     @UsePipes(new ValidationPipe)
-    async deActivateUser(@Body() data:Object, @Request() req): Promise<Object> {
+    async deActivateUser(@Body() data: Object, @Request() req): Promise<Object> {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
         if (payload.role != await this.adminService.getRoleIdByName("admin")) {
@@ -670,7 +688,7 @@ export class AdminController {
     //#endregion : users
 
     //#region : Dashboard
-    
+
     @UseGuards(adminAuthGuard)
     @Get("/showReport")
     @UsePipes(new ValidationPipe)
@@ -678,15 +696,13 @@ export class AdminController {
         const token = req.headers.authorization.split(' ')[1];
         const payload = this.jwtService.decode(token) as { email: string, role: string };
         if (payload.role != await this.adminService.getRoleIdByName("admin")) {
-            return {
-                message: "Invalid Auth Token.",
-            }
+            throw new BadRequestException("Invalid Auth Token.");
         }
         const exData = await this.adminService.findVerifiedAdminByEmailForAuth(payload.email);
         if (exData == null) {
             throw new BadRequestException("No Admin found associated with this credentials.");
         }
-        const res = await this.adminService.showDashboardReport();
+        const res = await this.adminService.showDashboardDailyTransactionReport();
         if (res != null) {
             return {
                 message: "Operation Successful",

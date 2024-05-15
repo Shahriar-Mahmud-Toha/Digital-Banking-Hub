@@ -45,46 +45,46 @@ export default function AdminProfileData() {
     fetchUserData();
   }, [router]);
 
-  const handleLogout = async () => {
-
-    const responseForLogout = await axios.delete(SERVER_ADDRESS + "/admin/logout", {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('admin_token')}`,
-      },
-    });
-    if (responseForLogout.status === 200 && responseForLogout.data.status=="1") {
-      localStorage.removeItem('admin_token');
-      localStorage.removeItem('admin_email');
-      router.push('./../admin/login');
-    }
-    else {
-      alert("Logout Failed !")
-    }
-  };
 
   if (user) {
     return (
       <>
-        <button className="bg-gray-300 hover:bg-gray-100 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline" onClick={handleLogout}>
-          Logout
-        </button>
-        <div>
-          {user.FullName}
-        </div>
-        <div>
-          {user.Email}
-        </div>
-        <div>
-          {format(new Date(user.DateOfBirth), 'MM/dd/yyyy')}
-        </div>
-        <div>
-          {user.Gender}
-        </div>
-        <div>
-          {user.userId}
-        </div>
-        <div>
-          {imageSrc && <img src={imageSrc} alt="Profile Picture" />}
+        <div className="flex flex-col items-center">
+          <div className="mb-10">
+            {imageSrc && <img src={imageSrc} className="profilePic" alt="Profile Picture" />}
+          </div>
+          <table className="text-2xl">
+            <tr>
+              <td>ID</td>
+              <td>:</td>
+              <td className="font-bold">{user.userId}</td>
+            </tr>
+            <tr>
+              <td>Name</td>
+              <td>:</td>
+              <td className="font-bold">{user.FullName}</td>
+            </tr>
+            <tr>
+              <td>Email</td>
+              <td>:</td>
+              <td className="font-bold">{user.Email}</td>
+            </tr>
+            <tr>
+              <td>Date of Birth</td>
+              <td>:</td>
+              <td className="font-bold">{format(new Date(user.DateOfBirth), 'MM/dd/yyyy')}</td>
+            </tr>
+            <tr>
+              <td>Gender</td>
+              <td>:</td>
+              <td className="font-bold">{user.Gender}</td>
+            </tr>
+            <tr>
+              <td>Address</td>
+              <td>:</td>
+              <td className="font-bold">{user.Address}</td>
+            </tr>
+          </table>
         </div>
       </>
     );
