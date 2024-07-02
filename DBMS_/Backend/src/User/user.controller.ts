@@ -26,8 +26,6 @@ export class UserController {
     return this.userService.getUser();
   }
 
-  //Get profile pic using user id
-  //@UseGuards(AuthGuard)
 
   //--1 get profile
   //@UseGuards(AuthGuard)
@@ -48,8 +46,8 @@ export class UserController {
   }
 
   //--2 user account Info
-  //@UseGuards(AuthGuard)
-  //@Roles('User')
+  @UseGuards(AuthGuard)
+  @Roles('User')
   @Get('/getProfileInfo')
   getUserProfile(@Session() session): object {
     if (session && session['userId']) {
@@ -88,15 +86,15 @@ export class UserController {
         if (error instanceof NotFoundException) {
           throw error;
         }
-        throw new Error('Withdrawal failed');
+        throw new Error('Deposit failed');
       }
     }
   }
 
 
   ///--5 Withdraw
-  // @UseGuards(AuthGuard)
-  //@Roles('User')
+  @UseGuards(AuthGuard)
+  @Roles('User')
   @Patch('/withdraw/')
   @UsePipes(new ValidationPipe())
   async withdraw(@Body() myobj: transactionDto): Promise<{ balance: number, transaction: TransactionEntity }> {
@@ -115,16 +113,16 @@ export class UserController {
 
   ///--6 TransectionHistor  many
 
+  
   @UseGuards(AuthGuard)
   @Roles('User')
-  @Get('info-and-transactions/')
-  async getUserInfoAndTransactions(@Session() session): Promise<{ user: EmployeeEntity, transactions: TransactionEntity[] }> {
-    return this.userService.getUserInfoAndTransactions(session.userid);
+  @Get('info-and-transactions/:id')
+  async getUserInfoAndTransactions(@Param('id') id: number): Promise<{ transactions: TransactionEntity[] }> {
+    return this.userService.getUserInfoAndTransactions(id);
   }
 
-
   ///---7 Make service request
-  ///@UseGuards(AuthGuard)
+  @UseGuards(AuthGuard)
   @Roles('User')
 
   @Post('makeServiceRequest')
@@ -201,21 +199,6 @@ export class UserController {
 
 
 
-  ////Experiment
-
-  // @Get('/transactions/:userId')
-  // async getUserTransactions(@Param('userId') userId: string): Promise<TransactionEntity[]> {
-  //   return this.userService.getUserTransactions(userId);
-  // }
-
-
-  //sendmail
-
-  // @Post('/sendMail')
-  // sendMail(){
-  //     return this.mailerService.sendmail;
-
-  // }
 
   @UseGuards(AuthGuard)
   @Roles('User')
@@ -277,20 +260,6 @@ export class UserController {
 
   }
 
-  // @UseGuards(AuthGuard)
-
-  // @Put('/updateProfile')
-
-  // updateProfile(@Session() session,@Body() myobj: profileDTO):Promise<profileDTO | string> {
-  //     if (session && session['email'] ) {
-  //     // Retrieve data from session
-  //     const userEmail = session['email']; // Access the 'email' property stored in the session
-  //     console.log(userEmail);
-
-  //     return this.userService.updateProfile(userEmail,myobj);
-  //     } 
-  //     throw new NotFoundException('No data in the session');
-  // }
 
 
 
@@ -310,11 +279,7 @@ export class UserController {
 
 
   //@UseGuards(AuthGuard)
-  @Roles('User')
-  @Get('info-and-transactions/:id')
-  async getUserInfoAndTransaction(@Param('id') id: string): Promise<{ user: EmployeeEntity, transactions: TransactionEntity[] }> {
-    return this.userService.getUserInfoAndTransactions(id);
-  }
+
 
 
 

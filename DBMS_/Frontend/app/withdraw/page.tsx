@@ -4,11 +4,13 @@
 
 import axios from "axios";
 import { SubmitHandler, useForm } from "react-hook-form";
-import Session from "../components/session";
+import Session from "../../components/usercomponents/session";
 import toast, { Toaster } from "react-hot-toast";
 import router from "next/router";
 import { useRouter } from "next/navigation";
 import { ok } from "assert";
+import React from "react";
+import NavigationBar from "@/app/components/usercomponents/navigationBar";
 
 export default function Withdraw() {
     const email = localStorage.getItem('email');
@@ -17,7 +19,7 @@ export default function Withdraw() {
     const AcNo = localStorage.getItem('Ac');
     type FormFields = {
         accountNumber: number | string;
-        amount: number;
+        amount: number | string;
         receiverAccount: number;
         holderName: string;
         accountType: string;
@@ -52,7 +54,11 @@ export default function Withdraw() {
             data.accountNumber = String(AcNo);
 
 
-            const response = await axios.patch('http://localhost:3001/user/withdraw', data);
+            const response = await axios.patch('http://localhost:3001/user/withdraw', data,{
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                },
+              });
             await new Promise((resolve) => setTimeout(resolve, 1000));
 
 
@@ -67,7 +73,7 @@ export default function Withdraw() {
             if (response.statusText == 'OK') {
                 await new Promise((resolve) => setTimeout(resolve, 1000));
 
-                router.push('/dashboard');
+                router.push('/user/dashboard');
 
 
             }
@@ -86,30 +92,23 @@ export default function Withdraw() {
 
 
     return (
-        <form className="max-w-md mx-auto p-6 bg-white shadow-md rounded-md" onSubmit={handleSubmit(onSubmit)}>
-
+        <>
 
             < Session />
             <Toaster />
+            <NavigationBar />
+        <form className="max-w-md mx-auto p-6 bg-white shadow-md rounded-md" onSubmit={handleSubmit(onSubmit)}>
 
 
 
-            <h1>  <label htmlFor="amount" className="block text-gray-700 font-bold mb-2">Accout Number:</label></h1>
+            <h1>  <label htmlFor="accountNumber" className="block text-gray-700 font-bold mb-2">Accout Number:</label></h1>
 
 
-            <h3> <input type="text" type="text" className="grow" value={AcNo} placeholder="" disabled /></h3>
-
-
+<p><input type="text" className="block text-gray-700 font-bold mb-2" defaultValue={AcNo ? AcNo : ""} placeholder="" disabled /></p>
             <div className="mb-4">
                 <label htmlFor="amount" className="block text-gray-700 font-bold mb-2">Amount:</label>
                 <input
-                    {...register("amount", {
-                        required: "Amount is required",
-                        min: {
-                            value: 0,
-                            message: "Amount must be greater than or equal to 0"
-                        }
-                    })}
+                    {...register("amount")}
                     type="number"
                     id="amount"
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500"
@@ -160,57 +159,84 @@ export default function Withdraw() {
                 )}
             </div>
 
+
+            <div className="form-control">
+  <label htmlFor="accountType" className="block text-gray-700 font-bold mb-2">Account Type:</label>
+  <select
+    className="select select-accent w-full"
+    {...register("accountType", {
+      required: "Enter Account Type",
+      validate: (value) => {
+        const validAccountType = ["current", "Savings"];
+        if (!validAccountType.includes(value)) {
+          return "Account must be Current or Savings";
+        }
+        return true;
+      },
+    })}
+  >
+    <option value="">Select Receiver Account Type</option> {/* This line is updated to make the option selected by default */}
+    <option value="current">Current Account</option>
+    <option value="Savings">Savings Account</option>
+  </select>
+  {errors.accountType && typeof errors.accountType.message === 'string' && (
+    <div className='text-red-500'>{errors.accountType.message}</div> // Updated class for consistency
+  )}
+</div>
+
+
+
+
+
             <div className="mb-4">
-                <label htmlFor="accountType" className="block text-gray-700 font-bold mb-2">Account Type:</label>
-                <input {...register("accountType",
-                    {
-                        required: " Enter Account Type",
-                        validate: (value) => {
-                            const validAccountype = ["Current", "Saving"];
-                            if (!validAccountype.includes(value)) {
-                                return "Account must be Current or Saving";
-                            }
-                            return true;
-                        },
-                    })} type="text" id="accountTpe" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500" placeholder="Current Or Saving" />
-                {errors.accountType && (
-                    <div className="text-red-500">{errors.accountType.message}</div>
-                )}
-            </div>
-
-
-
-
-            <div className="mb-4">
-                <label htmlFor="bankCode" className="block text-gray-700 font-bold mb-2">bankCode:</label>
+                <label htmlFor="bankCode" className="block text-gray-700 font-bold mb-2">Banking Code:</label>
                 <input {...register("bankCode")} type="number" id="address" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500" placeholder="Enter bankCode" />
             </div>
 
             <div className="mb-4">
-                <label htmlFor="routingNumber" className="block text-gray-700 font-bold mb-2">routingNumber:</label>
+                <label htmlFor="routingNumber" className="block text-gray-700 font-bold mb-2">Routing Number:</label>
                 <input {...register("routingNumber")} type="number" id="routingNumber" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500" placeholder="Enter routingNumber" />
             </div>
 
 
 
+            <div className="form-control">
+  <label htmlFor="transferType" className="block text-gray-700 font-bold mb-2">Transfer Type:</label>
+  <select
+    className="select select-accent w-full"
+    {...register("transferType", {
+      required: "Enter Transfer Method",
+      validate: (value) => {
+        const validAccountType = ["EFT","Payment","SWIFT", "RTGS","BACH"];
+        if (!validAccountType.includes(value)) {
+          return "Account must be Current or Savings";
+        }
+        return true;
+      },
+    })}
+  >
+    <option value="">Select your Account Type</option> {/* This line is updated to make the option selected by default */}
+    <option value="EFT">Electronic Fund Transfer (EFT):</option>
+    <option value="Payment">Bill Payment</option>
+    <option value="SWIFT">International Wire Transfers (SWIFT):</option>
+    <option value="RTGS">Real-Time Gross Settlement(RTGS):</option>
+    <option value="BACH">Bangladesh Automated Clearing House(BACH):</option>
+  </select>
+  {errors.accountType && typeof errors.accountType.message === 'string' && (
+    <div className='text-red-500'>{errors.accountType.message}</div> // Updated class for consistency
+  )}
+</div>
 
-            <div className="mb-4">
-                <label htmlFor="transferType" className="block text-gray-700 font-bold mb-2">transferType:</label>
-                <input {...register("transferType")} type="text" id="transferType" className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:border-indigo-500" placeholder="Enter transfer Type ex EFT" />
-            </div>
+
+<div className="mt-4 w-full">
+    <button disabled={isSubmitting} type="submit" className="btn btn-active btn-accent w-full py-2 px-4 hover:bg-indigo-600 focus:outline-none focus:bg-indigo-600">
+        {isSubmitting ? "Loading....." : "Submit"}
+    </button>
+</div>
 
          
-
-
-
-
-            <button disabled={isSubmitting} type="submit" className="btn btn-active btn-accent py-2 px-4  hover:bg-indigo-600 focus:outline-none focus:bg-indigo-600">{isSubmitting ? "Loading....." : "Submit"}</button>
-
-
-            <div className="flex-1">
-                <a href="/dashboard" className="btn btn-ghost text-xl">Home</a>
-            </div>
         </form>
+        </>
 
     );
 }

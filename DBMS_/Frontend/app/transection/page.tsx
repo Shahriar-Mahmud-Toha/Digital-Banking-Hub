@@ -1,21 +1,25 @@
 "use client"
 
 import Link from "next/link";
-import "../globals.css";
+import "../../globals.css";
 import axios from 'axios';
 import { Key } from 'react';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import Session from "../components/session";
-import Footer from "../components/footer";
+import Session from "../../components/usercomponents/session";
+import Footer from "../../components/footer";
+import NavigationBar from "../../components/usercomponents/navigationBar";
+import React from "react";
 
 export default function Transaction() {
     const router = useRouter();
     const [transactions, setTransactions] = useState<any[]>([]);
     const token = localStorage.getItem('token');
     const userID = localStorage.getItem('userID');
+    const AcNo = localStorage.getItem('Ac');
+
     if(!token){
-        router.push('/signin');
+        router.push('/login');
     
       }
 
@@ -23,7 +27,8 @@ export default function Transaction() {
         const fetchData = async () => {
             try {
                 if (token && userID) {
-                    const response = await axios.get(`http://localhost:3001/user/info-and-transactions/${userID}`, {
+
+                    const response = await axios.get('http://localhost:3001/user/info-and-transactions/'+AcNo, {
                         headers: {
                             Authorization: `Bearer ${token}`,
                         },
@@ -32,11 +37,11 @@ export default function Transaction() {
                     console.log(response.data);
                     setTransactions(response.data.transactions); // Update state with transactions
                 } else {
-                    router.push('/login');
+                   // router.push('/login');
                 }
             } catch (error) {
                 console.error('Error fetching user data:', error);
-                router.push('/signin'); // Redirect to login page on error
+               // router.push('/login'); // Redirect to login page on error
             }
         };
 
@@ -46,9 +51,11 @@ export default function Transaction() {
     return (
         <>
             < Session />
+            <NavigationBar/>
+
 
             <div className="flex-1">
-                <a href="/dashboard" className="btn btn-ghost text-xl">Home</a>
+                <a href="/user/dashboard" className="btn btn-ghost text-xl">Home</a>
             </div>
             <div className="overflow-x-auto">
                 <table className="table">
@@ -90,10 +97,12 @@ export default function Transaction() {
                     </tbody>
                 </table>
             </div>
-            <Footer />
 
-        </>
+            </>
+
+
     );
+
 }
 
 function formatDate(dateString: any) {

@@ -253,16 +253,19 @@ async withdraw(myobj: transactionDto): Promise<{balance: number, transaction: Tr
 
 ///--6  transection One to many
 
-async getUserInfoAndTransactions(id: string): Promise<{ user: EmployeeEntity; transactions: TransactionEntity[] }> {
-  const user = await this.userRepository.findOne({ where: { userId: id } });
+
+async getUserInfoAndTransactions(id: number): Promise<{ transactions: TransactionEntity[] }> {
   
-  const transactions = await this.tansactionRepository.find({ 
+  //const user = await this.userRepository.findOne({ where: { userId: id } });
+  
+  const transactions = await this.tansactionRepository.find( { where: { acountNumber: id },
     relations: ['userId'],
   });
 
   
-  return { user, transactions };
+  return {  transactions };
 }
+
 
 
 ///--7 Request for services
